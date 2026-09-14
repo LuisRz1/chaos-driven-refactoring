@@ -8,6 +8,15 @@ from .config import Settings
 from .models import RunResult
 from .reporter import write_report
 
+CHILD_TABLES = [
+    "run_phases",
+    "telemetry_samples",
+    "findings",
+    "diagnoses",
+    "patches",
+    "verifications",
+]
+
 
 class StdoutSink:
     name = "stdout"
@@ -27,6 +36,9 @@ class StdoutSink:
         print(f"[cdr] finding: {result.finding.category} (confidence {result.finding.confidence})")
         print(f"[cdr] stable after fix: {result.verification.stable}")
 
+    def emit_update(self, result: RunResult) -> None:
+        self.emit(result)
+
 
 class JsonFileSink:
     name = "json"
@@ -37,6 +49,9 @@ class JsonFileSink:
     def emit(self, result: RunResult) -> None:
         report_path = write_report(result, self.artifacts_dir)
         print(f"[cdr] artifacts written to {report_path}")
+
+    def emit_update(self, result: RunResult) -> None:
+        self.emit(result)
 
 
 class SupabaseSink:
@@ -57,30 +72,40 @@ class SupabaseSink:
             "Content-Profile": schema,
         }
 
+    def _client(self) -> httpx.Client:
+        return httpx.Client(
+            base_url=self.settings.supabase_url.rstrip("/"),
+            timeout=30,
+            headers=self.headers,
+        )
+
     def _insert(self, client: httpx.Client, table: str, rows: List[Dict[str, Any]]) -> None:
         if not rows:
             return
-        response = client.post(f"/rest/v1/{table}", json=rows, headers=self.headers)
+        response = client.post(f"/rest/v1/{table}", json=rows)
         if response.status_code >= 400:
             raise RuntimeError(
                 f"insert into {table} failed: {response.status_code} {response.text[:300]}"
             )
 
-    def emit(self, result: RunResult) -> None:
-        base = self.settings.supabase_url.rstrip("/")
-        run = {
-            "id": result.run_id,
+    def _run_payload(self, result: RunResult, include_id: bool) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
             "scenario_id": result.scenario_name,
             "scenario_name": result.scenario_name,
             "status": result.status,
             "mode": result.mode,
             "target_repo": result.target_repo,
             "commit_sha": result.commit_sha,
-            "started_at": result.started_at,
             "finished_at": result.finished_at,
             "collapse_detected": result.collapse_detected,
             "summary": result.summary,
         }
+        if include_id:
+            payload["id"] = result.run_id
+            payload["started_at"] = result.started_at
+        return payload
+
+    def _children(self, result: RunResult) -> Dict[str, List[Dict[str, Any]]]:
         phases = [
             {
                 "run_id": result.run_id,
@@ -129,19 +154,46 @@ class SupabaseSink:
             },
             run_id=result.run_id,
         )
+        return {
+            "run_phases": phases,
+            "telemetry_samples": samples,
+            "findings": [finding],
+            "diagnoses": [diagnosis],
+            "patches": [patch],
+            "verifications": [verification],
+        }
 
+    def emit(self, result: RunResult) -> None:
         try:
-            with httpx.Client(base_url=base, timeout=30) as client:
-                self._insert(client, "runs", [run])
-                self._insert(client, "run_phases", phases)
-                self._insert(client, "telemetry_samples", samples)
-                self._insert(client, "findings", [finding])
-                self._insert(client, "diagnoses", [diagnosis])
-                self._insert(client, "patches", [patch])
-                self._insert(client, "verifications", [verification])
+            with self._client() as client:
+                self._insert(client, "runs", [self._run_payload(result, include_id=True)])
+                children = self._children(result)
+                for table in CHILD_TABLES:
+                    self._insert(client, table, children[table])
             print("[cdr] run synced to Supabase")
         except Exception as error:
             print(f"[cdr] supabase sync skipped: {error}")
+
+    def emit_update(self, result: RunResult) -> None:
+        try:
+            with self._client() as client:
+                response = client.patch(
+                    "/rest/v1/runs",
+                    params={"id": f"eq.{result.run_id}"},
+                    json=self._run_payload(result, include_id=False),
+                )
+                if response.status_code >= 400:
+                    raise RuntimeError(
+                        f"update run failed: {response.status_code} {response.text[:300]}"
+                    )
+                for table in CHILD_TABLES:
+                    client.delete(f"/rest/v1/{table}", params={"run_id": f"eq.{result.run_id}"})
+                children = self._children(result)
+                for table in CHILD_TABLES:
+                    self._insert(client, table, children[table])
+            print("[cdr] queued run updated in Supabase")
+        except Exception as error:
+            print(f"[cdr] supabase update failed: {error}")
 
 
 def build_sinks(name: str, settings: Settings) -> List[Any]:
@@ -161,5 +213,14 @@ def emit_all(sinks: List[Any], result: RunResult) -> None:
     for sink in sinks:
         try:
             sink.emit(result)
+        except Exception as error:
+            print("[cdr] sink {} failed: {}".format(getattr(sink, "name", sink), error))
+
+
+def emit_update_all(sinks: List[Any], result: RunResult) -> None:
+    for sink in sinks:
+        try:
+            update = getattr(sink, "emit_update", sink.emit)
+            update(result)
         except Exception as error:
             print("[cdr] sink {} failed: {}".format(getattr(sink, "name", sink), error))

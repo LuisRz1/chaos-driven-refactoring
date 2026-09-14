@@ -39,6 +39,20 @@ npm run dev          # http://localhost:3000
 Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` to read live runs from
 Supabase; without them the UI renders deterministic demo data.
 
+### Submit a repository for analysis
+
+Open the dashboard and use **Analyze a repository**: the run is queued in Supabase and executed
+by the worker.
+
+```bash
+cd runner
+python -m cdr watch          # processes queued analyses (mock mode by default)
+```
+
+The API route needs `SUPABASE_SERVICE_ROLE_KEY` on Vercel (server-side only); the worker needs
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` locally. Bob 2.0 builds this flow at development
+time; the runtime repository analysis uses IBM watsonx Granite — see `docs/BOB_USAGE.md`.
+
 ### Runner (no Docker required in mock mode)
 
 ```bash

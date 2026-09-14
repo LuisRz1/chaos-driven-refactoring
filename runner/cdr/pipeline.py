@@ -20,8 +20,14 @@ class Pipeline:
         self.diagnoser = Diagnoser(settings)
         self.patcher = Patcher(settings)
 
-    def run(self, scenario: Scenario, mode: Optional[str] = None, create_pr: bool = False) -> RunResult:
-        run_id = f"run-{uuid.uuid4().hex[:8]}"
+    def run(
+        self,
+        scenario: Scenario,
+        mode: Optional[str] = None,
+        create_pr: bool = False,
+        run_id: Optional[str] = None,
+    ) -> RunResult:
+        run_id = run_id or f"run-{uuid.uuid4().hex[:8]}"
         run_mode = mode or self.settings.mode or scenario.mode
         started_at = utc_now()
         phases = []

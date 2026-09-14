@@ -31,6 +31,28 @@ flowchart LR
 | 3. Repository-aware diagnosis | `runner/cdr/diagnoser.py`, `watsonx.py` | analysis and concrete refactor plan (Granite, rule-based fallback) |
 | 4. Patch + verification | `runner/cdr/patcher.py`, `verifier.py` | diff, branch, before/after comparison, stability verdict |
 
+## Repository submission flow
+
+```mermaid
+sequenceDiagram
+  participant User
+  participant UI as Dashboard (Vercel)
+  participant API as /api/runs (Vercel)
+  participant DB as Supabase (schema cdr)
+  participant W as cdr watch (worker)
+  User->>UI: paste repo URL + scenario + mode
+  UI->>API: POST /api/runs
+  API->>DB: insert run status=queued
+  W->>DB: claim next queued run (status=running)
+  W->>W: execute 4-phase pipeline (chaos, classify, diagnose, verify)
+  W->>DB: update run + insert phases, telemetry, finding, diagnosis, patch, verification
+  UI->>DB: read runs and render results
+```
+
+The submission API runs server-side on Vercel with the Supabase service role key; the key is
+never exposed to the browser. The worker runs close to the target environment because live chaos
+needs Docker.
+
 ## Failure categories and branching
 
 Categories: `concurrency`, `memory_leak`, `unresilient_dependency`, `db_saturation`, `unknown`.

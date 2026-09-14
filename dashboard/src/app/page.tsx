@@ -1,8 +1,12 @@
+import { AnalyzeForm } from "@/components/analyze-form";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { RunCard } from "@/components/run-card";
 import { getRuns } from "@/lib/data";
 import { formatDuration } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+const activeStatuses = ["queued", "running", "collapsed", "diagnosing", "patching", "verifying"];
 
 const steps = [
   { phase: "01", name: "Inject chaos", detail: "k6 load + toxiproxy faults on a real target repo" },
@@ -41,6 +45,7 @@ export default async function Home() {
     collapseTimes.length > 0
       ? collapseTimes.reduce((sum, value) => sum + value, 0) / collapseTimes.length
       : null;
+  const hasActiveRuns = runs.some((run) => activeStatuses.includes(run.status));
 
   return (
     <div className="space-y-10">
@@ -57,6 +62,8 @@ export default async function Home() {
           repository context and proves the fix by re-running the exact same scenario.
         </p>
       </section>
+
+      <AnalyzeForm />
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div className="rounded-xl border border-white/10 bg-zinc-900/60 p-4">
@@ -115,11 +122,14 @@ export default async function Home() {
       <section className="space-y-4">
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-medium text-zinc-200">Experiment runs</h2>
-          <span className="text-xs text-zinc-500">
-            {avgCollapse !== null
-              ? `avg ${formatDuration(avgCollapse)} under chaos load before collapse`
-              : "no collapse data yet"}
-          </span>
+          <div className="flex items-center gap-3">
+            <AutoRefresh active={hasActiveRuns} />
+            <span className="text-xs text-zinc-500">
+              {avgCollapse !== null
+                ? `avg ${formatDuration(avgCollapse)} under chaos load before collapse`
+                : "no collapse data yet"}
+            </span>
+          </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {runs.map((run) => (

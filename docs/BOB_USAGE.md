@@ -5,6 +5,19 @@ uses watsonx.ai Granite for runtime analysis — but every significant piece of 
 planned, written, reviewed and debugged with Bob in the loop. This is exactly what the hackathon
 asks for: a project that showcases IBM Bob IDE as a core component of the build.
 
+## Where Bob sits in the "analyze a repository" flow
+
+Bob 2.0 is a development-time partner (IDE), not a runtime API, so the boundary is explicit:
+
+| Plane | Tool | Role |
+| --- | --- | --- |
+| Development (build time) | **IBM Bob 2.0** | Implements the submission form, `/api/runs` route, Supabase queue, `cdr watch` worker and every pipeline module; reviews and debugs the result. Evidence: `bob_sessions/`. |
+| Runtime (analysis time) | **IBM watsonx Granite** | Reads the submitted repository context, classifies the collapse, proposes the refactor and the patch. |
+
+When the dashboard queues a repo URL, the worker (built with Bob) executes the pipeline and
+watsonx Granite produces the diagnosis. During judging, show Bob implementing this exact flow in
+the exported sessions and the demo video — that is the "application of technology" evidence.
+
 ## Feature mapping
 
 | Bob 2.0 capability | Where it is used in CDR |
