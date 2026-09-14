@@ -3,7 +3,12 @@ from pathlib import Path
 from cdr.bob_client import parse_bob_output
 from cdr.classifier import classify
 from cdr.config import Settings
-from cdr.diagnoser import Diagnoser, _parse_sections
+from cdr.diagnoser import (
+    Diagnoser,
+    _derive_proposed_change,
+    _extract_repo_files,
+    _parse_sections,
+)
 from cdr.scenario import load_scenario
 from cdr.telemetry import simulate_telemetry
 
@@ -43,6 +48,25 @@ def test_parse_sections_without_files_block():
     analysis, files, proposed = _parse_sections("ANALYSIS:\nroot\nPROPOSED_CHANGE:\nfix")
     assert files == []
     assert proposed == "fix"
+
+
+def test_extract_repo_files_validates_against_workspace(tmp_path):
+    (tmp_path / "backend/src").mkdir(parents=True)
+    (tmp_path / "backend/src/panel.py").write_text("x", encoding="utf-8")
+    text = (
+        "See [`panel.py`](backend/src/panel.py) and `backend/src/missing.py` "
+        "and https://example.com/y.py"
+    )
+    files = _extract_repo_files(text, tmp_path)
+    assert files == ["backend/src/panel.py"]
+
+
+def test_derive_proposed_change_skips_preamble():
+    text = (
+        "Let me ask you clarifying questions.\n\n"
+        "## Recommended fix\nAdd a timeout fence around client creation.\n"
+    )
+    assert _derive_proposed_change(text) == "Add a timeout fence around client creation."
 
 
 def test_diagnoser_rules_mode_never_calls_bob(monkeypatch):

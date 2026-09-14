@@ -1,12 +1,23 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple
+import re
+from pathlib import Path
+from typing import Dict, List, Tuple
 
 from .bob_client import BobClient
 from .config import Settings
 from .models import Diagnosis, Finding, Scenario, Telemetry
 from .repo_context import ensure_repo_clone
 from .watsonx import WatsonxClient
+
+FILE_EXTENSIONS = (
+    "py|js|ts|tsx|jsx|go|java|rb|sql|yaml|yml|json|cs|php|kt|rs|dart|gd|astro|c|cpp|h|sh"
+)
+MARKDOWN_LINK_RE = re.compile(r"\]\(([^)\s]+)\)")
+BACKTICK_PATH_RE = re.compile(
+    r"`([A-Za-z0-9_./-]+\.(?:" + FILE_EXTENSIONS + r"))`"
+)
+PATH_RE = re.compile(r"\b([A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:" + FILE_EXTENSIONS + r"))\b")
 
 FALLBACK_ANALYSIS: Dict[str, Tuple[str, str]] = {
     "unresilient_dependency": (
@@ -177,6 +188,10 @@ class Diagnoser:
         analysis_md, target_files, proposed_change = _parse_sections(result.text)
         if not analysis_md and not proposed_change:
             raise RuntimeError("Bob Shell returned an unparseable analysis")
+        if not target_files:
+            target_files = _extract_repo_files(result.text, workspace)
+        if not proposed_change:
+            proposed_change = _derive_proposed_change(analysis_md)
         if not proposed_change:
             _, proposed_change = FALLBACK_ANALYSIS.get(finding.category, DEFAULT_FALLBACK)
         return Diagnosis(
@@ -208,6 +223,50 @@ def _parse_files(block: str) -> list:
     cleaned = block.replace("\n", ",").replace(";", ",")
     files = [item.strip().strip("`") for item in cleaned.split(",")]
     return [item for item in files if item][:5]
+
+
+def _extract_repo_files(text: str, workspace: Path) -> List[str]:
+    candidates: List[str] = []
+    for match in MARKDOWN_LINK_RE.finditer(text):
+        candidates.append(match.group(1))
+    for match in BACKTICK_PATH_RE.finditer(text):
+        candidates.append(match.group(1))
+    for match in PATH_RE.finditer(text):
+        candidates.append(match.group(1))
+
+    found: List[str] = []
+    for candidate in candidates:
+        candidate = candidate.split("#")[0].strip().lstrip("./")
+        if candidate.startswith(("http://", "https://", "/")):
+            continue
+        path = workspace / candidate
+        if path.exists() and path.is_file() and candidate not in found:
+            found.append(candidate)
+        if len(found) >= 5:
+            break
+    return found
+
+
+def _derive_proposed_change(analysis: str) -> str:
+    if not analysis:
+        return ""
+    for keyword in ("fix", "refactor", "recommend", "change", "plan"):
+        pattern = re.compile(
+            r"#+[^\n]*" + keyword + r"[^\n]*\n+([^\n#|`>]+)", re.IGNORECASE
+        )
+        match = pattern.search(analysis)
+        if match:
+            line = match.group(1).strip()
+            if len(line) > 20:
+                return line[:300]
+    for line in analysis.splitlines():
+        stripped = line.strip()
+        if len(stripped) < 40 or stripped.startswith(("#", "|", "```", ">", "-", "*")):
+            continue
+        if stripped.lower().startswith(("let me", "i now", "here is", "sure,", "sure!")):
+            continue
+        return stripped[:300]
+    return ""
 
 
 def _parse_sections(text: str) -> Tuple[str, list, str]:
