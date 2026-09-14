@@ -1,5 +1,5 @@
 import { getMockRunDetail, mockRuns } from "./mock-data";
-import { getSupabaseClient } from "./supabase";
+import { getSupabaseClient, supabaseSchema } from "./supabase";
 import type {
   Diagnosis,
   Finding,
@@ -34,6 +34,7 @@ export async function getRuns(): Promise<Run[]> {
   }
   try {
     const { data, error } = await client
+      .schema(supabaseSchema)
       .from("runs")
       .select("*")
       .order("started_at", { ascending: false })
@@ -57,8 +58,9 @@ export async function getRunDetail(id: string): Promise<RunDetail | null> {
   if (!client) {
     return getMockRunDetail(id);
   }
+  const db = client.schema(supabaseSchema);
   try {
-    const { data: runRow, error: runError } = await client
+    const { data: runRow, error: runError } = await db
       .from("runs")
       .select("*")
       .eq("id", id)
@@ -73,16 +75,16 @@ export async function getRunDetail(id: string): Promise<RunDetail | null> {
 
     const [{ data: phaseRows }, { data: sampleRows }, { data: findingRows }] =
       await Promise.all([
-        client.from("run_phases").select("*").eq("run_id", id).order("created_at"),
-        client.from("telemetry_samples").select("*").eq("run_id", id).order("t"),
-        client.from("findings").select("*").eq("run_id", id).limit(1),
+        db.from("run_phases").select("*").eq("run_id", id).order("created_at"),
+        db.from("telemetry_samples").select("*").eq("run_id", id).order("t"),
+        db.from("findings").select("*").eq("run_id", id).limit(1),
       ]);
 
     const finding = (findingRows?.[0] as Finding | undefined) ?? null;
 
     let diagnosis: Diagnosis | null = null;
     if (finding) {
-      const { data } = await client
+      const { data } = await db
         .from("diagnoses")
         .select("*")
         .eq("run_id", id)
@@ -91,8 +93,8 @@ export async function getRunDetail(id: string): Promise<RunDetail | null> {
     }
 
     const [{ data: patchRow }, { data: verificationRow }] = await Promise.all([
-      client.from("patches").select("*").eq("run_id", id).maybeSingle(),
-      client.from("verifications").select("*").eq("run_id", id).maybeSingle(),
+      db.from("patches").select("*").eq("run_id", id).maybeSingle(),
+      db.from("verifications").select("*").eq("run_id", id).maybeSingle(),
     ]);
 
     const samples = (sampleRows ?? []).filter((row) => (row as Row).kind !== "after");

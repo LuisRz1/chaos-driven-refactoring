@@ -36,6 +36,7 @@ class Settings:
     supabase_service_role_key: str = field(
         default_factory=lambda: _env("SUPABASE_SERVICE_ROLE_KEY")
     )
+    supabase_schema: str = field(default_factory=lambda: _env("SUPABASE_SCHEMA", "cdr"))
     github_repo: str = field(default_factory=lambda: _env("CDR_GITHUB_REPO"))
     github_token: str = field(default_factory=lambda: _env("GITHUB_TOKEN"))
 

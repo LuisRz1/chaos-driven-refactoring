@@ -47,24 +47,31 @@ class SupabaseSink:
 
     @property
     def headers(self) -> Dict[str, str]:
+        schema = self.settings.supabase_schema
         return {
             "apikey": self.settings.supabase_service_role_key,
             "Authorization": f"Bearer {self.settings.supabase_service_role_key}",
             "Content-Type": "application/json",
             "Prefer": "return=minimal",
+            "Accept-Profile": schema,
+            "Content-Profile": schema,
         }
 
     def _insert(self, client: httpx.Client, table: str, rows: List[Dict[str, Any]]) -> None:
         if not rows:
             return
         response = client.post(f"/rest/v1/{table}", json=rows, headers=self.headers)
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"insert into {table} failed: {response.status_code} {response.text[:300]}"
+            )
 
     def emit(self, result: RunResult) -> None:
         base = self.settings.supabase_url.rstrip("/")
         run = {
             "id": result.run_id,
             "scenario_id": result.scenario_name,
+            "scenario_name": result.scenario_name,
             "status": result.status,
             "mode": result.mode,
             "target_repo": result.target_repo,

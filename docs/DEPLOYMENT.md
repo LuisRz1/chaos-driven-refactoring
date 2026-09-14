@@ -12,8 +12,10 @@
 ## 1. Supabase
 
 1. Create a project at supabase.com and open the SQL editor.
-2. Run `supabase/migrations/0001_init.sql`.
-3. Collect the project URL, the `anon` key (dashboard) and the `service_role` key (runner only).
+2. Run `supabase/migrations/0001_init.sql`. It creates an isolated `cdr` schema (useful when
+   sharing a Supabase project with other applications) plus RLS policies and grants.
+3. Expose the schema in PostgREST: project settings → API → Exposed schemas, add `cdr`.
+4. Collect the project URL, the `anon` key (dashboard) and the `service_role` key (runner only).
 
 ## 2. Dashboard on Vercel
 
@@ -22,6 +24,7 @@
 3. Add environment variables:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `NEXT_PUBLIC_SUPABASE_SCHEMA` (defaults to `cdr`)
 4. Deploy. Without Supabase variables the dashboard falls back to deterministic demo data, so the
    URL always renders.
 
@@ -43,6 +46,7 @@ Environment variables:
 | `WATSONX_API_KEY`, `WATSONX_PROJECT_ID` | enable Granite diagnosis (otherwise rule-based fallback) |
 | `WATSONX_MODEL_ID` | must stay within hackathon scope (`ibm/granite-3-8b-instruct` by default) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | sync runs to the control room |
+| `SUPABASE_SCHEMA` | exposed schema for run tables (defaults to `cdr`) |
 | `CDR_GITHUB_REPO`, `GITHUB_TOKEN` | target for generated PRs (`--create-pr`) |
 
 ## 4. Chaos lab (live mode)

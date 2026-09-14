@@ -1,6 +1,8 @@
 create extension if not exists pgcrypto;
 
-create table if not exists projects (
+create schema if not exists cdr;
+
+create table if not exists cdr.projects (
   id text primary key,
   name text not null,
   repo_url text not null,
@@ -9,15 +11,15 @@ create table if not exists projects (
   created_at timestamptz not null default now()
 );
 
-create table if not exists scenarios (
+create table if not exists cdr.scenarios (
   id text primary key,
-  project_id text references projects (id) on delete cascade,
+  project_id text references cdr.projects (id) on delete cascade,
   name text not null,
   config jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
-create table if not exists runs (
+create table if not exists cdr.runs (
   id text primary key,
   project_id text,
   scenario_id text,
@@ -32,9 +34,9 @@ create table if not exists runs (
   summary jsonb not null default '{}'::jsonb
 );
 
-create table if not exists run_phases (
+create table if not exists cdr.run_phases (
   id bigint generated always as identity primary key,
-  run_id text not null references runs (id) on delete cascade,
+  run_id text not null references cdr.runs (id) on delete cascade,
   phase text not null,
   status text not null,
   label text not null,
@@ -42,9 +44,9 @@ create table if not exists run_phases (
   created_at timestamptz not null default now()
 );
 
-create table if not exists telemetry_samples (
+create table if not exists cdr.telemetry_samples (
   id bigint generated always as identity primary key,
-  run_id text not null references runs (id) on delete cascade,
+  run_id text not null references cdr.runs (id) on delete cascade,
   kind text not null default 'before',
   t integer not null,
   p95 numeric not null,
@@ -53,9 +55,9 @@ create table if not exists telemetry_samples (
   rps numeric not null
 );
 
-create table if not exists findings (
+create table if not exists cdr.findings (
   id uuid primary key default gen_random_uuid(),
-  run_id text not null references runs (id) on delete cascade,
+  run_id text not null references cdr.runs (id) on delete cascade,
   category text not null,
   confidence numeric not null,
   root_cause text not null,
@@ -65,19 +67,19 @@ create table if not exists findings (
   created_at timestamptz not null default now()
 );
 
-create table if not exists diagnoses (
+create table if not exists cdr.diagnoses (
   id uuid primary key default gen_random_uuid(),
-  run_id text not null references runs (id) on delete cascade,
-  finding_id uuid references findings (id) on delete set null,
+  run_id text not null references cdr.runs (id) on delete cascade,
+  finding_id uuid references cdr.findings (id) on delete set null,
   model text not null,
   analysis_md text not null,
   proposed_change text not null,
   created_at timestamptz not null default now()
 );
 
-create table if not exists patches (
+create table if not exists cdr.patches (
   id uuid primary key default gen_random_uuid(),
-  run_id text not null references runs (id) on delete cascade,
+  run_id text not null references cdr.runs (id) on delete cascade,
   branch text not null,
   pr_url text,
   files_changed jsonb not null default '[]'::jsonb,
@@ -85,9 +87,9 @@ create table if not exists patches (
   created_at timestamptz not null default now()
 );
 
-create table if not exists verifications (
+create table if not exists cdr.verifications (
   id uuid primary key default gen_random_uuid(),
-  run_id text not null references runs (id) on delete cascade,
+  run_id text not null references cdr.runs (id) on delete cascade,
   stable boolean not null,
   before jsonb not null,
   after jsonb not null,
@@ -95,31 +97,33 @@ create table if not exists verifications (
   created_at timestamptz not null default now()
 );
 
-create index if not exists runs_started_at_idx on runs (started_at desc);
-create index if not exists run_phases_run_id_idx on run_phases (run_id);
-create index if not exists telemetry_samples_run_id_idx on telemetry_samples (run_id);
-create index if not exists findings_run_id_idx on findings (run_id);
+create index if not exists runs_started_at_idx on cdr.runs (started_at desc);
+create index if not exists run_phases_run_id_idx on cdr.run_phases (run_id);
+create index if not exists telemetry_samples_run_id_idx on cdr.telemetry_samples (run_id);
+create index if not exists findings_run_id_idx on cdr.findings (run_id);
 
-alter table projects enable row level security;
-alter table scenarios enable row level security;
-alter table runs enable row level security;
-alter table run_phases enable row level security;
-alter table telemetry_samples enable row level security;
-alter table findings enable row level security;
-alter table diagnoses enable row level security;
-alter table patches enable row level security;
-alter table verifications enable row level security;
+alter table cdr.projects enable row level security;
+alter table cdr.scenarios enable row level security;
+alter table cdr.runs enable row level security;
+alter table cdr.run_phases enable row level security;
+alter table cdr.telemetry_samples enable row level security;
+alter table cdr.findings enable row level security;
+alter table cdr.diagnoses enable row level security;
+alter table cdr.patches enable row level security;
+alter table cdr.verifications enable row level security;
 
-create policy "public read projects" on projects for select using (true);
-create policy "public read scenarios" on scenarios for select using (true);
-create policy "public read runs" on runs for select using (true);
-create policy "public read run_phases" on run_phases for select using (true);
-create policy "public read telemetry_samples" on telemetry_samples for select using (true);
-create policy "public read findings" on findings for select using (true);
-create policy "public read diagnoses" on diagnoses for select using (true);
-create policy "public read patches" on patches for select using (true);
-create policy "public read verifications" on verifications for select using (true);
+create policy "public read projects" on cdr.projects for select using (true);
+create policy "public read scenarios" on cdr.scenarios for select using (true);
+create policy "public read runs" on cdr.runs for select using (true);
+create policy "public read run_phases" on cdr.run_phases for select using (true);
+create policy "public read telemetry_samples" on cdr.telemetry_samples for select using (true);
+create policy "public read findings" on cdr.findings for select using (true);
+create policy "public read diagnoses" on cdr.diagnoses for select using (true);
+create policy "public read patches" on cdr.patches for select using (true);
+create policy "public read verifications" on cdr.verifications for select using (true);
 
-alter publication supabase_realtime add table runs;
-alter publication supabase_realtime add table run_phases;
-alter publication supabase_realtime add table telemetry_samples;
+grant usage on schema cdr to anon, authenticated, service_role;
+grant select on all tables in schema cdr to anon, authenticated;
+grant all on all tables in schema cdr to service_role;
+grant usage, select on all sequences in schema cdr to anon, authenticated;
+grant all on all sequences in schema cdr to service_role;
