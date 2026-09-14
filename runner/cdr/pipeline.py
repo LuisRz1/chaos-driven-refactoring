@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Optional
+from typing import Any, Callable, Dict, Optional
 
 from .classifier import classify
 from .config import Settings
@@ -12,6 +12,17 @@ from .telemetry import simulate_telemetry
 from .verifier import verify
 
 MANUAL_DIAGNOSIS_MINUTES = 95
+
+ProgressCallback = Callable[[str, Dict[str, Any]], None]
+
+
+def _notify(callback: Optional[ProgressCallback], stage: str, payload: Dict[str, Any]) -> None:
+    if callback is None:
+        return
+    try:
+        callback(stage, payload)
+    except Exception:
+        pass
 
 
 class Pipeline:
@@ -26,6 +37,7 @@ class Pipeline:
         mode: Optional[str] = None,
         create_pr: bool = False,
         run_id: Optional[str] = None,
+        on_progress: Optional[ProgressCallback] = None,
     ) -> RunResult:
         run_id = run_id or f"run-{uuid.uuid4().hex[:8]}"
         run_mode = mode or self.settings.mode or scenario.mode
@@ -34,67 +46,95 @@ class Pipeline:
 
         telemetry = simulate_telemetry(scenario, fixed=False, seed=42)
         collapsed = telemetry.time_to_collapse_s is not None
+        chaos_detail = (
+            "{} load at {} vus against {}, {} fault on {}, collapse at {}s".format(
+                scenario.load.tool,
+                scenario.load.vus,
+                scenario.load.endpoint or "target endpoint",
+                scenario.chaos.fault,
+                scenario.chaos.proxy,
+                telemetry.time_to_collapse_s,
+            )
+            if collapsed
+            else "no collapse detected under current thresholds"
+        )
         phases.append(
             PhaseRecord(
                 phase="chaos",
                 status="done",
                 label="Chaos injection + collapse capture",
-                detail=(
-                    "{} load at {} vus against {}, {} fault on {}, collapse at {}s".format(
-                        scenario.load.tool,
-                        scenario.load.vus,
-                        scenario.load.endpoint or "target endpoint",
-                        scenario.chaos.fault,
-                        scenario.chaos.proxy,
-                        telemetry.time_to_collapse_s,
-                    )
-                    if collapsed
-                    else "no collapse detected under current thresholds"
-                ),
+                detail=chaos_detail,
             )
+        )
+        _notify(
+            on_progress,
+            "chaos",
+            {"telemetry": telemetry, "collapsed": collapsed, "detail": chaos_detail},
         )
 
         finding = classify(telemetry)
+        classification_detail = (
+            f"{finding.category} (confidence {round(finding.confidence, 2)}) — "
+            f"{finding.file_path} {finding.symbol}"
+        )
         phases.append(
             PhaseRecord(
                 phase="classification",
                 status="done",
                 label="Root cause classification",
-                detail=(
-                    f"{finding.category} (confidence {round(finding.confidence, 2)}) — "
-                    f"{finding.file_path} {finding.symbol}"
-                ),
+                detail=classification_detail,
             )
+        )
+        _notify(
+            on_progress,
+            "classification",
+            {"finding": finding, "detail": classification_detail},
         )
 
         diagnosis = self.diagnoser.diagnose(scenario, finding, telemetry)
+        diagnosis_detail = f"{diagnosis.model} analyzed {scenario.target} with full repository context"
         phases.append(
             PhaseRecord(
                 phase="diagnosis",
                 status="done",
                 label="Repository-aware diagnosis",
-                detail=f"{diagnosis.model} analyzed {scenario.target} with full repository context",
+                detail=diagnosis_detail,
             )
         )
 
         patch = self.patcher.build_patch(scenario.name, finding, diagnosis)
         if create_pr:
             patch.pr_url = self.patcher.create_pull_request(patch, self.settings.artifacts_dir.parent)
+        _notify(
+            on_progress,
+            "diagnosis",
+            {"diagnosis": diagnosis, "patch": patch, "detail": diagnosis_detail},
+        )
 
         telemetry_after = simulate_telemetry(scenario, fixed=True, seed=43)
         verification = verify(telemetry, telemetry_after, scenario)
+        verification_detail = (
+            f"same chaos scenario re-executed on patched branch {patch.branch} — "
+            f"stable, p95 {telemetry_after.p95_ms} ms"
+            if verification.stable
+            else "patch did not stabilize the system under the same chaos scenario"
+        )
         phases.append(
             PhaseRecord(
                 phase="verification",
                 status="done" if verification.stable else "failed",
                 label="PR generation + resilience verification",
-                detail=(
-                    f"same chaos scenario re-executed on patched branch {patch.branch} — "
-                    f"stable, p95 {telemetry_after.p95_ms} ms"
-                    if verification.stable
-                    else "patch did not stabilize the system under the same chaos scenario"
-                ),
+                detail=verification_detail,
             )
+        )
+        _notify(
+            on_progress,
+            "verification",
+            {
+                "verification": verification,
+                "telemetry_after": telemetry_after,
+                "detail": verification_detail,
+            },
         )
 
         status = "completed" if verification.stable else "failed"

@@ -30,6 +30,29 @@ def test_pipeline_end_to_end_mock(tmp_path):
     assert "Proposed change" in result.patch.diff
 
 
+def test_pipeline_emits_progress_stages(tmp_path):
+    settings = make_settings(tmp_path)
+    scenario = load_scenario(SCENARIOS_DIR / "checkout-latency-cascade.yaml")
+    stages = []
+    result = Pipeline(settings).run(
+        scenario, mode="mock", on_progress=lambda stage, payload: stages.append(stage)
+    )
+    assert stages == ["chaos", "classification", "diagnosis", "verification"]
+    assert result.status == "completed"
+
+
+def test_pipeline_survives_failing_progress_callback(tmp_path):
+    settings = make_settings(tmp_path)
+    scenario = load_scenario(SCENARIOS_DIR / "checkout-latency-cascade.yaml")
+
+    def failing_callback(stage, payload):
+        raise RuntimeError("progress sink unavailable")
+
+    result = Pipeline(settings).run(scenario, mode="mock", on_progress=failing_callback)
+    assert result.status == "completed"
+    assert len(result.phases) == 4
+
+
 def test_pipeline_writes_json_and_markdown_artifacts(tmp_path):
     settings = make_settings(tmp_path)
     scenario = load_scenario(SCENARIOS_DIR / "payment-dependency-timeout.yaml")

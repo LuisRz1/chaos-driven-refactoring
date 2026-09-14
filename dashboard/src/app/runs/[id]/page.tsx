@@ -15,10 +15,9 @@ import {
   formatMs,
   formatPercent,
 } from "@/lib/format";
+import { getRunProgress, isActiveStatus } from "@/lib/progress";
 
 export const dynamic = "force-dynamic";
-
-const activeStatuses = ["queued", "running", "collapsed", "diagnosing", "patching", "verifying"];
 
 export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
   const { id } = await props.params;
@@ -27,7 +26,8 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
     notFound();
   }
   const { run, samples, samples_after, phases, finding, diagnosis, patch, verification } = detail;
-  const isActive = activeStatuses.includes(run.status);
+  const isActive = isActiveStatus(run.status);
+  const progress = getRunProgress(run, phases);
   const improvement = verification?.improvement_pct ?? {};
 
   return (
@@ -40,11 +40,28 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-semibold tracking-tight">{run.scenario_name}</h1>
             <StatusBadge status={run.status} />
-            <AutoRefresh active={isActive} />
+            <AutoRefresh active={isActive} intervalMs={5000} />
           </div>
           <p className="font-mono text-xs text-zinc-500">
             {run.id} · {run.target_repo}@{run.commit_sha} · {run.mode} mode
           </p>
+          {isActive ? (
+            <div className="max-w-md">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-cyan-300">{progress.label}</span>
+                <span className="font-mono text-zinc-500">
+                  phase {Math.min(progress.donePhases + 1, progress.totalPhases)}/
+                  {progress.totalPhases} · {progress.percent}%
+                </span>
+              </div>
+              <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-cyan-400 transition-all duration-700"
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
         </div>
         <div className="text-left text-xs text-zinc-500 sm:text-right">
           <p>Started {formatDateTime(run.started_at)} UTC</p>

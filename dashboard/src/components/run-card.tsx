@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/status-badge";
 import { formatDateTime, formatMs, formatPercent } from "@/lib/format";
+import { getRunProgress, isActiveStatus } from "@/lib/progress";
 import type { Run } from "@/lib/types";
 
 export function RunCard({ run }: { run: Run }) {
+  const progress = getRunProgress(run);
+  const active = isActiveStatus(run.status);
+  const hasMetrics = run.status === "completed" || run.status === "failed";
+
   return (
     <Link
       href={`/runs/${run.id}`}
@@ -18,6 +23,26 @@ export function RunCard({ run }: { run: Run }) {
         </div>
         <StatusBadge status={run.status} />
       </div>
+
+      {active ? (
+        <div className="mt-4">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-cyan-300">{progress.label}</span>
+            <span className="font-mono text-zinc-500">{progress.percent}%</span>
+          </div>
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-cyan-400 transition-all duration-700"
+              style={{ width: `${progress.percent}%` }}
+            />
+          </div>
+          {run.status === "queued" ? (
+            <p className="mt-2 text-[11px] text-zinc-500">
+              Queued — the worker will start it automatically
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
         <div>
@@ -35,7 +60,9 @@ export function RunCard({ run }: { run: Run }) {
         <div>
           <p className="text-zinc-500">error rate</p>
           <p className="mt-0.5 font-medium text-zinc-200 tabular-nums">
-            {formatPercent(run.summary.error_rate_before)} → {formatPercent(run.summary.error_rate_after)}
+            {hasMetrics
+              ? `${formatPercent(run.summary.error_rate_before)} → ${formatPercent(run.summary.error_rate_after)}`
+              : "pending"}
           </p>
         </div>
       </div>

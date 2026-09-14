@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .config import Settings
 from .pipeline import Pipeline
+from .progress import SupabaseProgress
 from .queue import SupabaseQueue
 from .scenario import list_scenarios, load_scenario
 from .sinks import StdoutSink, SupabaseSink, build_sinks, emit_all
@@ -49,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     watch_parser.add_argument("--interval", type=int, default=5, help="polling interval in seconds")
     watch_parser.add_argument("--mode", choices=["mock", "live"], default=None)
     watch_parser.add_argument("--once", action="store_true", help="process one queued run and exit")
+    watch_parser.add_argument(
+        "--pace",
+        type=float,
+        default=0.0,
+        help="seconds to pause between phases (useful for live demos)",
+    )
 
     subparsers.add_parser("doctor", help="print effective configuration without secrets")
 
@@ -61,6 +68,7 @@ def _watch(args, settings: Settings) -> int:
         return 1
     queue = SupabaseQueue(settings)
     sink = SupabaseSink(settings)
+    progress = SupabaseProgress(settings)
     stdout = StdoutSink()
     print(f"[cdr] watching for queued runs every {args.interval}s")
     while True:
@@ -74,12 +82,20 @@ def _watch(args, settings: Settings) -> int:
         run_id = row["id"]
         target = row.get("target_repo")
         print(f"[cdr] claimed {run_id} ({target})")
+        progress.start(run_id, str(target))
+
+        def on_progress(stage, payload, current_run=run_id):
+            progress.handle(current_run, stage, payload)
+            if args.pace > 0:
+                time.sleep(args.pace)
+
         try:
             scenario = queue.scenario_for(row)
             result = Pipeline(settings).run(
                 scenario,
                 mode=args.mode or row.get("mode"),
                 run_id=run_id,
+                on_progress=on_progress,
             )
             stdout.emit(result)
             sink.emit_update(result)

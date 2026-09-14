@@ -3,10 +3,9 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { RunCard } from "@/components/run-card";
 import { getRuns } from "@/lib/data";
 import { formatDuration } from "@/lib/format";
+import { isActiveStatus } from "@/lib/progress";
 
 export const dynamic = "force-dynamic";
-
-const activeStatuses = ["queued", "running", "collapsed", "diagnosing", "patching", "verifying"];
 
 const steps = [
   { phase: "01", name: "Inject chaos", detail: "k6 load + toxiproxy faults on a real target repo" },
@@ -45,7 +44,7 @@ export default async function Home() {
     collapseTimes.length > 0
       ? collapseTimes.reduce((sum, value) => sum + value, 0) / collapseTimes.length
       : null;
-  const hasActiveRuns = runs.some((run) => activeStatuses.includes(run.status));
+  const hasActiveRuns = runs.some((run) => isActiveStatus(run.status));
 
   return (
     <div className="space-y-10">
@@ -123,7 +122,7 @@ export default async function Home() {
         <div className="flex items-baseline justify-between">
           <h2 className="text-sm font-medium text-zinc-200">Experiment runs</h2>
           <div className="flex items-center gap-3">
-            <AutoRefresh active={hasActiveRuns} />
+            <AutoRefresh active={hasActiveRuns} intervalMs={5000} />
             <span className="text-xs text-zinc-500">
               {avgCollapse !== null
                 ? `avg ${formatDuration(avgCollapse)} under chaos load before collapse`

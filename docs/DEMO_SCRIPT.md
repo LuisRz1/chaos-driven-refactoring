@@ -22,6 +22,9 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
 ## 0:50–1:20 — Run the pipeline
 
 - Terminal: `python -m cdr run --scenario scenarios/checkout-latency-cascade.yaml --mode live --sink all`
+- Or queue it from the dashboard ("Analyze a repository") and start the worker with
+  `python -m cdr watch --pace 6`; the run card and detail page show the live progress bar moving
+  through chaos → classification → diagnosis → verification.
 - Cut to the dashboard `/` and open the run: collapse reproduced at 74.5 s, p95 4,820 ms, error
   rate 38.4%.
 - Voice over: "Phase 1 captured the physical collapse."
