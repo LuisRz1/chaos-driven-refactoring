@@ -1,0 +1,54 @@
+# How IBM Bob 2.0 is used
+
+Bob 2.0 is the development partner that builds CDR. It is not a runtime dependency — the product
+uses watsonx.ai Granite for runtime analysis — but every significant piece of the repository is
+planned, written, reviewed and debugged with Bob in the loop. This is exactly what the hackathon
+asks for: a project that showcases IBM Bob IDE as a core component of the build.
+
+## Feature mapping
+
+| Bob 2.0 capability | Where it is used in CDR |
+| --- | --- |
+| **Agent mode** | End-to-end implementation of the runner pipeline (models → telemetry → classifier → diagnoser → patcher → verifier) and the dashboard pages |
+| **Parallel tasks** | Dashboard workstream and runner workstream advanced simultaneously; infra compose/k6/Toxiproxy developed in parallel with the Supabase schema |
+| **Subagents** | Scoped work: Go/Python diff templates per failure category, k6 script, SQL policies, README/docs passes |
+| **Document understanding** | Ingested the hackathon brief, the CDR context document, and the ChaosEater / AIOpsLab papers to keep the pitch and metrics aligned with the research state of the art |
+
+## Workflow per phase
+
+1. **Phase 1 — chaos capture**: Bob generates the compose subset, the k6 scenario and the
+   Toxiproxy wiring; reviews the address graph (`checkoutservice → toxiproxy → paymentservice`).
+2. **Phase 2 — classification**: Bob implements the deterministic signal-to-category rules and
+   their tests.
+3. **Phase 3 — diagnosis**: Bob writes the watsonx client (IAM token flow, generation endpoint,
+   blocked-model guard) and the rule-based fallback.
+4. **Phase 4 — patch + verification**: Bob composes the diff templates per category, the
+   verification math and the Supabase sink.
+5. **Control room**: Bob builds the Next.js pages, charts and mock data fallback.
+
+## Exporting task sessions for judging (mandatory)
+
+For every relevant task, in Bob IDE:
+
+1. Open **Views → More Actions → History** and confirm the correct project workspace.
+2. Select the task; open the task header to show the **task session consumption summary**.
+3. Screenshot the summary (Bobcoins used) and save it into `bob_sessions/`.
+4. Use **Export task history** to download the markdown file and store it in `bob_sessions/`.
+5. Repeat for all tasks that contributed to the submission.
+
+Naming convention and rules: `bob_sessions/README.md`.
+
+## Bobcoin budget plan
+
+Each participant receives **40 Bobcoins**. Plan before the event starts:
+
+- Reserve ~60% for phase 1–4 implementation tasks (the core of the submission).
+- Reserve ~25% for dashboard and infra parallel tasks.
+- Keep ~15% for debugging and final polish before the video recording.
+- Prefer subagents for well-scoped work; avoid re-prompting large agent sessions for small fixes.
+
+## Compliance reminders
+
+- Remove all credentials and API keys before exporting sessions into the repository.
+- Do not use out-of-scope watsonx models (blocked in `runner/cdr/config.py`).
+- The repository is MIT-licensed and every artifact is original work from this team.
