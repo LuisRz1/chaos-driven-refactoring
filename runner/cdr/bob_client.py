@@ -97,6 +97,8 @@ class BobClient:
             command,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=self.settings.bob_timeout_s,
             cwd=cwd,
             env=env,

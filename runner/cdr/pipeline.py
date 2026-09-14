@@ -93,11 +93,12 @@ class Pipeline:
             {"finding": finding, "detail": classification_detail},
         )
 
-        repair = (
-            self.repairer.repair(scenario, finding, telemetry)
-            if self.repairer.available
-            else None
-        )
+        repair = None
+        if self.repairer.available:
+            try:
+                repair = self.repairer.repair(scenario, finding, telemetry)
+            except Exception as error:
+                print(f"[cdr] bob repair skipped: {error}")
         if repair is not None:
             diagnosis, patch = repair
         else:

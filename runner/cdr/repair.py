@@ -13,17 +13,19 @@ from .workspace import is_managed_workspace, reset_workspace, workspace_diff, wo
 PROMPT_TEMPLATE = "\n".join(
     [
         "You are a senior site reliability engineer working inside this repository clone "
-        "({target}@{commit}).",
+        "({target}@{commit}). This is a fully automated pipeline: there is no human to answer "
+        "questions, so never ask for clarification and never stop to write a plan file.",
         "A chaos experiment reproduced a production collapse with this signature:",
         "- Failure category: {category}",
         "- Symptoms: {evidence}",
         "",
-        "Task:",
-        "1. Read the repository and find where this failure class can originate in THIS codebase.",
-        "2. Apply the minimal production-quality fix directly to the relevant source files.",
-        "3. Do not create documentation files, do not touch tests, lockfiles or CI config.",
+        "Do this now, in this session:",
+        "1. Read at most 6 of the most relevant source files to find where this failure class "
+        "can originate in THIS codebase.",
+        "2. Immediately apply the minimal production-quality fix, editing at most 3 files.",
+        "3. Do not create documentation files or plan files, do not touch tests, lockfiles or CI.",
         "4. Do not run builds, installers or test suites.",
-        "5. Reply exactly in this format:",
+        "5. After the edits are saved, reply exactly in this format:",
         "ANALYSIS:",
         "<concise markdown analysis of the root cause in this repository>",
         "FILES:",

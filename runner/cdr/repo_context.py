@@ -13,6 +13,8 @@ def _run_git(args, cwd: Optional[Path] = None, timeout: int = 180) -> subprocess
         cwd=str(cwd) if cwd else None,
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=timeout,
     )
 
