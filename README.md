@@ -94,6 +94,14 @@ and business-value framing: `docs/METRICS.md`.
 Built for the **IBM Bob 2.0 Hackathon** (lablab.ai, September 25–27, 2026). Judging criteria
 mapping: `docs/JUDGING_MAP.md`.
 
+## For AI agents and contributors
+
+- [`AGENTS.md`](AGENTS.md) — complete agent guide: commands, verification steps, conventions,
+  architecture summary, environment variables and gotchas.
+- [`obsidian-vault/`](obsidian-vault/Home.md) — linked knowledge base ("brain"). Open the
+  folder as an Obsidian vault or read the markdown: product, architecture, pipeline, operations,
+  IBM Bob integration, hackathon context, roadmap and glossary.
+
 ## License
 
 MIT — see `LICENSE`.
