@@ -3,7 +3,7 @@ from pathlib import Path
 from cdr.bob_client import parse_bob_output
 from cdr.classifier import classify
 from cdr.config import Settings
-from cdr.diagnoser import Diagnoser
+from cdr.diagnoser import Diagnoser, _parse_sections
 from cdr.scenario import load_scenario
 from cdr.telemetry import simulate_telemetry
 
@@ -25,6 +25,24 @@ def test_parse_bob_output_extracts_task_and_cost():
 
 def test_parse_bob_output_returns_none_without_result_line():
     assert parse_bob_output("no json here") is None
+
+
+def test_parse_sections_with_files_block():
+    text = (
+        "ANALYSIS:\nroot cause\n"
+        "FILES:\nbackend/src/a.py#init_client, backend/src/b.py\n"
+        "PROPOSED_CHANGE:\nGuard the dependency call"
+    )
+    analysis, files, proposed = _parse_sections(text)
+    assert analysis == "root cause"
+    assert files == ["backend/src/a.py#init_client", "backend/src/b.py"]
+    assert proposed == "Guard the dependency call"
+
+
+def test_parse_sections_without_files_block():
+    analysis, files, proposed = _parse_sections("ANALYSIS:\nroot\nPROPOSED_CHANGE:\nfix")
+    assert files == []
+    assert proposed == "fix"
 
 
 def test_diagnoser_rules_mode_never_calls_bob(monkeypatch):

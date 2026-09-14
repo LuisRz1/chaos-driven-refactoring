@@ -92,6 +92,14 @@ class Pipeline:
         )
 
         diagnosis = self.diagnoser.diagnose(scenario, finding, telemetry)
+        if diagnosis.target_files:
+            first = diagnosis.target_files[0]
+            path, _, symbol = first.partition("#")
+            diagnosis.target_files = [
+                item.partition("#")[0].strip() for item in diagnosis.target_files
+            ]
+            finding.file_path = path.strip()
+            finding.symbol = symbol.strip()
         diagnosis_detail = f"{diagnosis.model} analyzed {scenario.target} with full repository context"
         phases.append(
             PhaseRecord(
@@ -108,7 +116,7 @@ class Pipeline:
         _notify(
             on_progress,
             "diagnosis",
-            {"diagnosis": diagnosis, "patch": patch, "detail": diagnosis_detail},
+            {"diagnosis": diagnosis, "patch": patch, "finding": finding, "detail": diagnosis_detail},
         )
 
         telemetry_after = simulate_telemetry(scenario, fixed=True, seed=43)

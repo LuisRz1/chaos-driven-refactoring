@@ -143,7 +143,9 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
                 <span className="font-mono">
                   {finding.file_path}
                 </span>{" "}
-                <span className="font-mono text-cyan-300">{finding.symbol}</span>
+                {finding.symbol ? (
+                  <span className="font-mono text-cyan-300">{finding.symbol}</span>
+                ) : null}
               </p>
               <p className="mt-3 text-sm leading-relaxed text-zinc-300">{finding.root_cause}</p>
               <ul className="mt-4 space-y-2">
@@ -219,6 +221,14 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
                 <span className="font-medium text-zinc-300">Proposed change: </span>
                 {diagnosis.proposed_change}
               </p>
+              {diagnosis.target_files && diagnosis.target_files.length > 0 ? (
+                <p className="mt-3 text-xs text-zinc-400">
+                  <span className="font-medium text-zinc-300">Identified locations: </span>
+                  <span className="font-mono text-cyan-300">
+                    {diagnosis.target_files.join(", ")}
+                  </span>
+                </p>
+              ) : null}
             </div>
           ) : null}
 

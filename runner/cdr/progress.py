@@ -157,11 +157,18 @@ class SupabaseProgress:
     def _handle_diagnosis(self, run_id: str, payload: Dict[str, Any]) -> None:
         diagnosis: Diagnosis = payload["diagnosis"]
         patch: Patch = payload["patch"]
+        finding: Finding = payload["finding"]
 
         def action(client: httpx.Client) -> None:
             self._patch_run(client, run_id, {"status": "patching"})
             self._upsert_phase(
                 client, run_id, _phase_row(run_id, "diagnosis", "done", payload["detail"])
+            )
+            self._replace(
+                client,
+                "findings",
+                {"run_id": f"eq.{run_id}"},
+                [dict(finding.to_dict(), run_id=run_id)],
             )
             self._replace(
                 client,

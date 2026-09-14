@@ -98,6 +98,7 @@ class Diagnosis:
     proposed_change: str
     bob_task_id: Optional[str] = None
     bobcoins: Optional[float] = None
+    target_files: List[str] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

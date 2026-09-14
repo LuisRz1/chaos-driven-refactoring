@@ -155,6 +155,8 @@ class Diagnoser:
                 "Respond exactly in this format:",
                 "ANALYSIS:",
                 "<concise markdown analysis>",
+                "FILES:",
+                "<comma-separated repository-relative paths that must change, use path#symbol when known>",
                 "PROPOSED_CHANGE:",
                 "<one sentence describing the concrete code change>",
             ]
@@ -172,7 +174,7 @@ class Diagnoser:
             scenario, finding, telemetry, grounded=workspace is not None
         )
         result = self.bob.run(prompt, workspace=workspace, mode="plan")
-        analysis_md, proposed_change = _parse_sections(result.text)
+        analysis_md, target_files, proposed_change = _parse_sections(result.text)
         if not analysis_md and not proposed_change:
             raise RuntimeError("Bob Shell returned an unparseable analysis")
         if not proposed_change:
@@ -183,6 +185,7 @@ class Diagnoser:
             proposed_change=proposed_change,
             bob_task_id=result.task_id,
             bobcoins=result.bobcoins,
+            target_files=target_files,
         )
 
     def _diagnose_with_watsonx(
@@ -190,23 +193,38 @@ class Diagnoser:
     ) -> Diagnosis:
         prompt = self._build_prompt(scenario, finding, telemetry, grounded=False)
         text = self.client.generate(prompt)
-        analysis_md, proposed_change = _parse_sections(text)
+        analysis_md, target_files, proposed_change = _parse_sections(text)
         if not proposed_change:
             _, proposed_change = FALLBACK_ANALYSIS.get(finding.category, DEFAULT_FALLBACK)
         return Diagnosis(
             model=self.settings.watsonx_model_id,
             analysis_md=analysis_md or self._fallback(finding).analysis_md,
             proposed_change=proposed_change,
+            target_files=target_files,
         )
 
 
-def _parse_sections(text: str) -> Tuple[str, str]:
+def _parse_files(block: str) -> list:
+    cleaned = block.replace("\n", ",").replace(";", ",")
+    files = [item.strip().strip("`") for item in cleaned.split(",")]
+    return [item for item in files if item][:5]
+
+
+def _parse_sections(text: str) -> Tuple[str, list, str]:
     analysis = ""
+    target_files: list = []
     proposed = ""
-    if "PROPOSED_CHANGE:" in text:
-        head, tail = text.split("PROPOSED_CHANGE:", 1)
+    body = text
+    if "FILES:" in body:
+        head, tail = body.split("FILES:", 1)
+        body = head
+        files_block, _, after = tail.partition("PROPOSED_CHANGE:")
+        target_files = _parse_files(files_block)
+        proposed = after.strip().split("\n")[0].strip() if after else ""
+    if "PROPOSED_CHANGE:" in body:
+        head, tail = body.split("PROPOSED_CHANGE:", 1)
         analysis = head.replace("ANALYSIS:", "").strip()
-        proposed = tail.strip().split("\n")[0].strip()
+        proposed = proposed or tail.strip().split("\n")[0].strip()
     else:
-        analysis = text.replace("ANALYSIS:", "").strip()
-    return analysis, proposed
+        analysis = body.replace("ANALYSIS:", "").strip()
+    return analysis, target_files, proposed

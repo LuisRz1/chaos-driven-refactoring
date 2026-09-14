@@ -76,6 +76,7 @@ create table if not exists cdr.diagnoses (
   proposed_change text not null,
   bob_task_id text,
   bobcoins numeric,
+  target_files jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now()
 );
 

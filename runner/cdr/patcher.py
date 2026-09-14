@@ -103,8 +103,9 @@ class Patcher:
                 patch = self._build_with_bob(branch, scenario, finding, diagnosis)
                 if patch is not None:
                     return patch
-            except Exception:
-                pass
+                print("[cdr] bob patch produced an empty diff, using template")
+            except Exception as error:
+                print(f"[cdr] bob patch skipped: {error}")
         return self._template_patch(branch, finding, diagnosis)
 
     def _template_patch(self, branch: str, finding: Finding, diagnosis: Diagnosis) -> Patch:
@@ -127,6 +128,9 @@ class Patcher:
         if workspace is None or not self._is_managed_workspace(workspace):
             return None
         self._reset_workspace(workspace)
+        targets = [item.partition("#")[0].strip() for item in diagnosis.target_files if item]
+        if not targets:
+            targets = [finding.file_path]
         prompt = "\n".join(
             [
                 "You are applying a verified refactoring in this repository clone "
@@ -135,9 +139,11 @@ class Patcher:
                 f"Failure category: {finding.category}",
                 f"Root cause: {finding.root_cause}",
                 f"Concrete change to apply: {diagnosis.proposed_change}",
+                f"Target files identified during diagnosis: {', '.join(targets)}.",
                 "",
                 "Rules:",
-                "- Read the relevant source files, then edit them directly in this workspace.",
+                "- Read the target files first, then edit them directly in this workspace.",
+                "- Edit only the target files plus any strictly necessary adjacent files.",
                 "- Apply the minimal production-quality change; keep the existing code style.",
                 "- Do not create documentation files, do not touch tests, lockfiles or CI config.",
                 "- Do not run builds, installers or test suites.",

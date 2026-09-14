@@ -87,6 +87,7 @@ export interface Diagnosis {
   proposed_change: string;
   bob_task_id?: string | null;
   bobcoins?: number | null;
+  target_files?: string[] | null;
 }
 
 export interface Patch {
