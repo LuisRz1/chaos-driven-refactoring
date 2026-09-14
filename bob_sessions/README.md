@@ -17,11 +17,19 @@ phase-2-classifier.md / phase-2-classifier.png
 phase-2-dashboard.md / phase-2-dashboard.png
 phase-3-watsonx-diagnosis.md / phase-3-watsonx-diagnosis.png
 phase-4-verification.md / phase-4-verification.png
+bobshell-<task-name>-<timestamp>.json      # headless Bob Shell sessions
 ...
 ```
 
 Group exports by the pipeline phase they contributed to so judges can trace how Bob 2.0 was used
 in each part of the build.
+
+## Headless session log
+
+| Task | Mode | Bobcoins | Evidence |
+| --- | --- | --- | --- |
+| queue-unit-tests | agent | 0.94 | `bobshell-queue-unit-tests-*.json` |
+| concurrency-bisector | agent | 0.28 | `bobshell-concurrency-bisector-*.json` |
 
 ## Rules
 
