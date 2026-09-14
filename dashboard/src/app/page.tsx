@@ -28,19 +28,19 @@ export default async function Home() {
       }
       return ((before - after) / before) * 100;
     })
-    .filter((value): value is number => value !== null);
+    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
   const avgReduction =
     p95Reductions.length > 0
       ? p95Reductions.reduce((sum, value) => sum + value, 0) / p95Reductions.length
       : null;
   const aiMinutes = completed
     .map((run) => run.summary.diagnosis_minutes_ai)
-    .filter((value): value is number => value !== null);
+    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
   const avgAiMinutes =
     aiMinutes.length > 0 ? aiMinutes.reduce((sum, value) => sum + value, 0) / aiMinutes.length : null;
   const collapseTimes = collapsed
     .map((run) => run.summary.time_to_collapse_s)
-    .filter((value): value is number => value !== null);
+    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
   const avgCollapse =
     collapseTimes.length > 0
       ? collapseTimes.reduce((sum, value) => sum + value, 0) / collapseTimes.length

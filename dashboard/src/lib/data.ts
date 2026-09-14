@@ -14,7 +14,8 @@ import type {
 type Row = Record<string, unknown>;
 
 function mapRun(row: Row): Run {
-  return row as unknown as Run;
+  const run = row as unknown as Run;
+  return { ...run, summary: run.summary ?? ({} as Run["summary"]) };
 }
 
 function mapSample(row: Row): TelemetrySample {

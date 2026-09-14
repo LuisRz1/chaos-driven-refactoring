@@ -88,12 +88,12 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
         <MetricCard
           label="Diagnosis time"
           value={
-            run.summary.diagnosis_minutes_ai !== null
+            typeof run.summary.diagnosis_minutes_ai === "number"
               ? `${run.summary.diagnosis_minutes_ai.toFixed(1)} min`
               : "—"
           }
           sub={
-            run.summary.diagnosis_minutes_manual_estimate !== null
+            typeof run.summary.diagnosis_minutes_manual_estimate === "number"
               ? `vs ~${run.summary.diagnosis_minutes_manual_estimate} min manual SRE`
               : "AI vs manual SRE estimate"
           }

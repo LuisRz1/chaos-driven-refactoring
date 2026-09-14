@@ -1,4 +1,10 @@
-export function formatDateTime(value: string | null): string {
+type Numeric = number | null | undefined;
+
+function isMissing(value: Numeric): boolean {
+  return value === null || value === undefined || Number.isNaN(value);
+}
+
+export function formatDateTime(value: string | null | undefined): string {
   if (!value) {
     return "—";
   }
@@ -11,34 +17,38 @@ export function formatDateTime(value: string | null): string {
   });
 }
 
-export function formatDuration(seconds: number | null): string {
-  if (seconds === null) {
+export function formatDuration(seconds: Numeric): string {
+  if (isMissing(seconds) || (seconds as number) < 0) {
     return "—";
   }
-  if (seconds < 60) {
-    return `${seconds.toFixed(1)}s`;
+  const value = seconds as number;
+  if (value < 60) {
+    return `${value.toFixed(1)}s`;
   }
-  const minutes = Math.floor(seconds / 60);
-  const rest = Math.round(seconds % 60);
+  const minutes = Math.floor(value / 60);
+  const rest = Math.round(value % 60);
   return `${minutes}m ${rest}s`;
 }
 
-export function formatMs(value: number | null): string {
-  if (value === null) {
+export function formatMs(value: Numeric): string {
+  if (isMissing(value)) {
     return "—";
   }
-  return `${Math.round(value).toLocaleString("en-US")} ms`;
+  return `${Math.round(value as number).toLocaleString("en-US")} ms`;
 }
 
-export function formatPercent(value: number | null, digits = 1): string {
-  if (value === null) {
+export function formatPercent(value: Numeric, digits = 1): string {
+  if (isMissing(value)) {
     return "—";
   }
-  return `${value.toFixed(digits)}%`;
+  return `${(value as number).toFixed(digits)}%`;
 }
 
-export function formatConfidence(value: number): string {
-  return `${Math.round(value * 100)}%`;
+export function formatConfidence(value: Numeric): string {
+  if (isMissing(value)) {
+    return "—";
+  }
+  return `${Math.round((value as number) * 100)}%`;
 }
 
 export function categoryLabel(category: string): string {
