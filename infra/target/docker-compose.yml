@@ -1,0 +1,87 @@
+name: cdr-staging
+
+services:
+  frontend:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/frontend:v0.10.3
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+      - CHECKOUT_SERVICE_ADDR=checkoutservice:5050
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - DISABLE_PROFILER=1
+    depends_on:
+      - checkoutservice
+      - productcatalogservice
+      - cartservice
+
+  checkoutservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice:v0.10.3
+    environment:
+      - PORT=5050
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - PAYMENT_SERVICE_ADDR=toxiproxy:8666
+      - EMAIL_SERVICE_ADDR=emailservice:5000
+      - CURRENCY_SERVICE_ADDR=currencyservice:7000
+      - CART_SERVICE_ADDR=cartservice:7070
+      - DISABLE_PROFILER=1
+    depends_on:
+      - paymentservice
+      - toxiproxy
+
+  paymentservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/paymentservice:v0.10.3
+    environment:
+      - PORT=50051
+      - DISABLE_PROFILER=1
+
+  toxiproxy:
+    image: ghcr.io/shopify/toxiproxy:2.9.0
+    command: ["-config", "/config/toxiproxy.json"]
+    volumes:
+      - ./../chaos/toxiproxy.json:/config/toxiproxy.json:ro
+    ports:
+      - "8474:8474"
+      - "8666:8666"
+    depends_on:
+      - paymentservice
+
+  productcatalogservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.3
+    environment:
+      - PORT=3550
+      - DISABLE_PROFILER=1
+
+  cartservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/cartservice:v0.10.3
+    environment:
+      - REDIS_ADDR=redis-cart:6379
+      - PORT=7070
+      - DISABLE_PROFILER=1
+    depends_on:
+      - redis-cart
+
+  redis-cart:
+    image: redis:7.2-alpine
+
+  currencyservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/currencyservice:v0.10.3
+    environment:
+      - PORT=7000
+      - DISABLE_PROFILER=1
+
+  shippingservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/shippingservice:v0.10.3
+    environment:
+      - PORT=50051
+      - DISABLE_PROFILER=1
+
+  emailservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/emailservice:v0.10.3
+    environment:
+      - PORT=5000
+      - DISABLE_PROFILER=1

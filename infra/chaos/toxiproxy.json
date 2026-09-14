@@ -1,0 +1,10 @@
+{
+  "proxies": [
+    {
+      "name": "payment-service",
+      "listen": "0.0.0.0:8666",
+      "upstream": "paymentservice:50051",
+      "enabled": true
+    }
+  ]
+}
