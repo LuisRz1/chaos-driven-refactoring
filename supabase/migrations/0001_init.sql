@@ -74,6 +74,8 @@ create table if not exists cdr.diagnoses (
   model text not null,
   analysis_md text not null,
   proposed_change text not null,
+  bob_task_id text,
+  bobcoins numeric,
   created_at timestamptz not null default now()
 );
 

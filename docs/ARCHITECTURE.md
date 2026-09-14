@@ -28,7 +28,7 @@ flowchart LR
 | --- | --- | --- |
 | 1. Chaos + collapse capture | `runner/cdr/telemetry.py`, `infra/` | telemetry samples, peak p95/p99, error rate, time-to-collapse, log signals |
 | 2. Classification | `runner/cdr/classifier.py` | failure category + confidence + evidence + suspect location |
-| 3. Repository-aware diagnosis | `runner/cdr/diagnoser.py`, `watsonx.py` | analysis and concrete refactor plan (Granite, rule-based fallback) |
+| 3. Repository-aware diagnosis | `runner/cdr/diagnoser.py`, `bob_client.py`, `watsonx.py` | analysis and concrete refactor plan: IBM Bob Shell reads the cloned repository (`--mode plan`), watsonx Granite is the alternative, deterministic rules the last resort |
 | 4. Patch + verification | `runner/cdr/patcher.py`, `verifier.py` | diff, branch, before/after comparison, stability verdict |
 
 ## Repository submission flow
@@ -68,7 +68,14 @@ patch is proposed.
 Supabase Postgres stores `projects`, `scenarios`, `runs`, `run_phases`, `telemetry_samples`,
 `findings`, `diagnoses`, `patches` and `verifications`. The runner writes with the service role
 key; the dashboard reads through RLS-protected public read policies and refreshes active runs
-every 10 seconds.
+every 5 seconds. Each `diagnoses` row records the analyzer, plus `bob_task_id` and `bobcoins`
+when IBM Bob performed the analysis.
+
+## Analyzer precedence
+
+`CDR_ANALYZER` controls phase 3: `auto` (Bob Shell if `BOB_API_KEY` is available, then watsonx
+Granite if configured, then deterministic rules), or force `bob`, `watsonx` or `rules`. Bob runs
+against a shallow clone of the submitted repository with `--max-cost` guarding Bobcoin spend.
 
 ## Modes
 

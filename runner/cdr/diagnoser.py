@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
+from .bob_client import BobClient
 from .config import Settings
 from .models import Diagnosis, Finding, Scenario, Telemetry
+from .repo_context import ensure_repo_clone
 from .watsonx import WatsonxClient
 
 FALLBACK_ANALYSIS: Dict[str, Tuple[str, str]] = {
@@ -95,14 +97,24 @@ class Diagnoser:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.client = WatsonxClient(settings)
+        self.bob = BobClient(settings)
 
     def diagnose(self, scenario: Scenario, finding: Finding, telemetry: Telemetry) -> Diagnosis:
-        if self.client.configured:
+        for source in self._sources():
             try:
-                return self._diagnose_with_watsonx(scenario, finding, telemetry)
+                if source == "bob" and self.bob.available:
+                    return self._diagnose_with_bob(scenario, finding, telemetry)
+                if source == "watsonx" and self.client.configured:
+                    return self._diagnose_with_watsonx(scenario, finding, telemetry)
             except Exception:
-                pass
+                continue
         return self._fallback(finding)
+
+    def _sources(self):
+        configured = (self.settings.analyzer or "auto").lower()
+        if configured in ("bob", "watsonx", "rules"):
+            return [configured]
+        return ["bob", "watsonx", "rules"]
 
     def _fallback(self, finding: Finding) -> Diagnosis:
         analysis, proposed = FALLBACK_ANALYSIS.get(finding.category, DEFAULT_FALLBACK)
@@ -112,31 +124,71 @@ class Diagnoser:
             proposed_change=proposed,
         )
 
+    def _build_prompt(
+        self, scenario: Scenario, finding: Finding, telemetry: Telemetry, grounded: bool
+    ) -> str:
+        evidence = "\n".join(f"- {item}" for item in finding.evidence)
+        lines = [
+            "You are a senior site reliability engineer performing repository-aware root cause "
+            "analysis for a refactoring agent.",
+            "",
+            f"Repository: {scenario.target}@{scenario.commit}",
+            f"Failing symbol: {finding.symbol} in {finding.file_path}",
+            f"Failure category: {finding.category}",
+            f"Collapse detected after {telemetry.time_to_collapse_s}s under the chaos scenario "
+            f"{scenario.name}.",
+            "",
+            "Evidence:",
+            evidence,
+            "",
+        ]
+        if grounded:
+            lines.append(
+                f"Read the repository source (start with {finding.file_path}) and ground the "
+                "analysis in the actual code, citing files or symbols you inspected."
+            )
+        else:
+            lines.append("Base the analysis on the evidence and standard resilience patterns.")
+        lines.extend(
+            [
+                "",
+                "Respond exactly in this format:",
+                "ANALYSIS:",
+                "<concise markdown analysis>",
+                "PROPOSED_CHANGE:",
+                "<one sentence describing the concrete code change>",
+            ]
+        )
+        return "\n".join(lines)
+
+    def _diagnose_with_bob(
+        self, scenario: Scenario, finding: Finding, telemetry: Telemetry
+    ) -> Diagnosis:
+        workspace = ensure_repo_clone(self.settings, scenario.target, scenario.commit)
+        if workspace is None:
+            workspace = self.settings.artifacts_dir / "bob-workspace"
+            workspace.mkdir(parents=True, exist_ok=True)
+        prompt = self._build_prompt(
+            scenario, finding, telemetry, grounded=workspace is not None
+        )
+        result = self.bob.run(prompt, workspace=workspace, mode="plan")
+        analysis_md, proposed_change = _parse_sections(result.text)
+        if not analysis_md and not proposed_change:
+            raise RuntimeError("Bob Shell returned an unparseable analysis")
+        if not proposed_change:
+            _, proposed_change = FALLBACK_ANALYSIS.get(finding.category, DEFAULT_FALLBACK)
+        return Diagnosis(
+            model="bob-shell",
+            analysis_md=analysis_md or self._fallback(finding).analysis_md,
+            proposed_change=proposed_change,
+            bob_task_id=result.task_id,
+            bobcoins=result.bobcoins,
+        )
+
     def _diagnose_with_watsonx(
         self, scenario: Scenario, finding: Finding, telemetry: Telemetry
     ) -> Diagnosis:
-        evidence = "\n".join(f"- {item}" for item in finding.evidence)
-        prompt = "\n".join(
-            [
-                "You are a senior site reliability engineer performing repository-aware root cause "
-                "analysis for a refactoring agent.",
-                "",
-                f"Repository: {scenario.target}@{scenario.commit}",
-                f"Failing symbol: {finding.symbol} in {finding.file_path}",
-                f"Failure category: {finding.category}",
-                f"Collapse detected after {telemetry.time_to_collapse_s}s under the load scenario {scenario.name}",
-                "",
-                "Evidence:",
-                evidence,
-                "",
-                "Write a concise analysis and a concrete refactor plan using repository patterns.",
-                "Respond exactly in this format:",
-                "ANALYSIS:",
-                "<markdown analysis>",
-                "PROPOSED_CHANGE:",
-                "<one sentence describing the code change>",
-            ]
-        )
+        prompt = self._build_prompt(scenario, finding, telemetry, grounded=False)
         text = self.client.generate(prompt)
         analysis_md, proposed_change = _parse_sections(text)
         if not proposed_change:

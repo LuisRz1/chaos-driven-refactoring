@@ -39,6 +39,18 @@ class Settings:
     supabase_schema: str = field(default_factory=lambda: _env("SUPABASE_SCHEMA", "cdr"))
     github_repo: str = field(default_factory=lambda: _env("CDR_GITHUB_REPO"))
     github_token: str = field(default_factory=lambda: _env("GITHUB_TOKEN"))
+    analyzer: str = field(default_factory=lambda: _env("CDR_ANALYZER", "auto"))
+    bob_api_key: str = field(default_factory=lambda: _env("BOB_API_KEY"))
+    bob_binary: str = field(default_factory=lambda: _env("BOB_BINARY", "bob"))
+    bob_max_cost: float = field(
+        default_factory=lambda: float(_env("CDR_BOB_MAX_COST", "2") or 2)
+    )
+    bob_timeout_s: int = field(
+        default_factory=lambda: int(_env("CDR_BOB_TIMEOUT_S", "420") or 420)
+    )
+    clone_repos: bool = field(
+        default_factory=lambda: _env("CDR_CLONE_REPOS", "1").lower() not in ("0", "false", "no")
+    )
 
     @property
     def watsonx_configured(self) -> bool:
@@ -52,8 +64,12 @@ class Settings:
         return {
             "mode": self.mode,
             "artifacts_dir": str(self.artifacts_dir),
+            "analyzer": self.analyzer,
             "watsonx_model_id": self.watsonx_model_id,
             "watsonx_configured": str(self.watsonx_configured),
+            "bob_configured": str(bool(self.bob_api_key)),
+            "bob_max_cost": str(self.bob_max_cost),
+            "clone_repos": str(self.clone_repos),
             "supabase_configured": str(self.supabase_configured),
             "github_repo": self.github_repo or "not set",
         }

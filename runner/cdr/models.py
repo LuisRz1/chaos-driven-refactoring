@@ -96,6 +96,8 @@ class Diagnosis:
     model: str
     analysis_md: str
     proposed_change: str
+    bob_task_id: Optional[str] = None
+    bobcoins: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

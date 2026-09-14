@@ -186,7 +186,19 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
             <div className="rounded-xl border border-white/10 bg-zinc-900/60 p-5">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-medium text-zinc-200">Repository-aware diagnosis</h2>
-                <span className="font-mono text-[11px] text-zinc-500">{diagnosis.model}</span>
+                <div className="text-right">
+                  <span className="block font-mono text-[11px] text-zinc-500">
+                    {diagnosis.model}
+                  </span>
+                  {diagnosis.bob_task_id ? (
+                    <span className="block font-mono text-[11px] text-amber-300">
+                      IBM Bob task {diagnosis.bob_task_id.slice(0, 8)}
+                      {typeof diagnosis.bobcoins === "number"
+                        ? ` · ${diagnosis.bobcoins.toFixed(2)} Bobcoins consumed`
+                        : ""}
+                    </span>
+                  ) : null}
+                </div>
               </div>
               <div className="mt-3 space-y-2 text-sm leading-relaxed text-zinc-300">
                 {diagnosis.analysis_md.split("\n").map((line, index) => {

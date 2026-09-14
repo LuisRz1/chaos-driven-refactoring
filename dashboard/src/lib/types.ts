@@ -85,6 +85,8 @@ export interface Diagnosis {
   model: string;
   analysis_md: string;
   proposed_change: string;
+  bob_task_id?: string | null;
+  bobcoins?: number | null;
 }
 
 export interface Patch {
