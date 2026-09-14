@@ -51,6 +51,12 @@ class Settings:
     clone_repos: bool = field(
         default_factory=lambda: _env("CDR_CLONE_REPOS", "1").lower() not in ("0", "false", "no")
     )
+    bob_patches: bool = field(
+        default_factory=lambda: _env("CDR_BOB_PATCHES", "1").lower() not in ("0", "false", "no")
+    )
+    bob_patch_max_cost: float = field(
+        default_factory=lambda: float(_env("CDR_BOB_PATCH_MAX_COST", "2") or 2)
+    )
 
     @property
     def watsonx_configured(self) -> bool:

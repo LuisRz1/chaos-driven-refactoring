@@ -96,6 +96,9 @@ export interface Patch {
   pr_url: string | null;
   files_changed: string[];
   diff: string;
+  source?: string | null;
+  bob_task_id?: string | null;
+  bobcoins?: number | null;
 }
 
 export interface MetricsSnapshot {

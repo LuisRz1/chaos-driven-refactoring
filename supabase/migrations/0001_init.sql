@@ -86,6 +86,9 @@ create table if not exists cdr.patches (
   pr_url text,
   files_changed jsonb not null default '[]'::jsonb,
   diff text not null,
+  source text not null default 'template',
+  bob_task_id text,
+  bobcoins numeric,
   created_at timestamptz not null default now()
 );
 

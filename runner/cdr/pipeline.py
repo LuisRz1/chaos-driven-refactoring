@@ -102,7 +102,7 @@ class Pipeline:
             )
         )
 
-        patch = self.patcher.build_patch(scenario.name, finding, diagnosis)
+        patch = self.patcher.build_patch(scenario, finding, diagnosis)
         if create_pr:
             patch.pr_url = self.patcher.create_pull_request(patch, self.settings.artifacts_dir.parent)
         _notify(

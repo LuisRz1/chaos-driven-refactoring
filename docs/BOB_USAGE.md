@@ -37,7 +37,7 @@ Bob 2.0 participates in both planes:
 | Plane | Tool | Role |
 | --- | --- | --- |
 | Development (build time) | **IBM Bob 2.0 (IDE + Shell)** | Implements the submission form, `/api/runs` route, Supabase queue, `cdr watch` worker and every pipeline module; reviews and debugs the result. Evidence: `bob_sessions/`. |
-| Runtime (analysis time) | **IBM Bob Shell (default) / watsonx Granite (alternative)** | The worker shallow-clones the submitted repository and runs `bob run --mode plan --workspace <clone>` so Bob reads the actual code and produces the analysis. Each analysis consumes Bobcoins and the run stores `bob_task_id` and `bobcoins` in the `diagnoses` table. If `BOB_API_KEY` is absent, the pipeline falls back to watsonx Granite and then to deterministic rules. |
+| Runtime (analysis time) | **IBM Bob Shell (default) / watsonx Granite (alternative)** | The worker shallow-clones the submitted repository; Bob reads the actual code (`--mode plan`) for the diagnosis and then applies the refactor in the clone (`--mode agent`). The patch shown in the dashboard is the real `git diff` of Bob's edits, with real file paths and context. Each analysis and patch consumes Bobcoins and the run stores `bob_task_id` and `bobcoins` for both. If `BOB_API_KEY` is absent, the pipeline falls back to watsonx Granite and then to deterministic rules. |
 
 Analyzer selection (`CDR_ANALYZER`): `auto` (default: Bob → watsonx → rules), `bob`, `watsonx`
 or `rules`. Guardrails: `CDR_BOB_MAX_COST` caps the Bobcoins spent per analysis and

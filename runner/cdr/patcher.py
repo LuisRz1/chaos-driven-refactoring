@@ -5,8 +5,10 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional
 
+from .bob_client import BobClient
 from .config import Settings
-from .models import Diagnosis, Finding, Patch
+from .models import Diagnosis, Finding, Patch, Scenario
+from .repo_context import ensure_repo_clone
 
 DIFF_TEMPLATES = {
     "unresilient_dependency": "\n".join(
@@ -92,9 +94,20 @@ def slugify(value: str) -> str:
 class Patcher:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        self.bob = BobClient(settings)
 
-    def build_patch(self, scenario_name: str, finding: Finding, diagnosis: Diagnosis) -> Patch:
-        branch = f"cdr/fix-{slugify(scenario_name)}"
+    def build_patch(self, scenario: Scenario, finding: Finding, diagnosis: Diagnosis) -> Patch:
+        branch = f"cdr/fix-{slugify(scenario.name)}"
+        if self.settings.bob_patches and self.bob.available:
+            try:
+                patch = self._build_with_bob(branch, scenario, finding, diagnosis)
+                if patch is not None:
+                    return patch
+            except Exception:
+                pass
+        return self._template_patch(branch, finding, diagnosis)
+
+    def _template_patch(self, branch: str, finding: Finding, diagnosis: Diagnosis) -> Patch:
         diff = DIFF_TEMPLATES.get(finding.category, "")
         files_changed = FILE_TARGETS.get(finding.category, [])
         if not diff:
@@ -104,7 +117,85 @@ class Patcher:
             branch=branch,
             files_changed=list(files_changed),
             diff=header + diff,
+            source="template",
         )
+
+    def _build_with_bob(
+        self, branch: str, scenario: Scenario, finding: Finding, diagnosis: Diagnosis
+    ) -> Optional[Patch]:
+        workspace = ensure_repo_clone(self.settings, scenario.target, scenario.commit)
+        if workspace is None or not self._is_managed_workspace(workspace):
+            return None
+        self._reset_workspace(workspace)
+        prompt = "\n".join(
+            [
+                "You are applying a verified refactoring in this repository clone "
+                f"({scenario.target}@{scenario.commit}).",
+                "A chaos experiment reproduced a production collapse.",
+                f"Failure category: {finding.category}",
+                f"Root cause: {finding.root_cause}",
+                f"Concrete change to apply: {diagnosis.proposed_change}",
+                "",
+                "Rules:",
+                "- Read the relevant source files, then edit them directly in this workspace.",
+                "- Apply the minimal production-quality change; keep the existing code style.",
+                "- Do not create documentation files, do not touch tests, lockfiles or CI config.",
+                "- Do not run builds, installers or test suites.",
+                "- When done, reply with a single line: DONE <comma-separated list of changed files>",
+            ]
+        )
+        result = self.bob.run(
+            prompt,
+            workspace=workspace,
+            mode="agent",
+            max_cost=self.settings.bob_patch_max_cost,
+        )
+        diff = self._workspace_diff(workspace)
+        if not diff.strip():
+            return None
+        files = self._workspace_files(workspace)
+        return Patch(
+            branch=branch,
+            files_changed=files or [finding.file_path],
+            diff=diff,
+            source="bob-shell",
+            bob_task_id=result.task_id,
+            bobcoins=result.bobcoins,
+        )
+
+    def _managed_root(self) -> Path:
+        return (self.settings.artifacts_dir / "repos").resolve()
+
+    def _is_managed_workspace(self, workspace: Path) -> bool:
+        try:
+            workspace.resolve().relative_to(self._managed_root())
+            return True
+        except ValueError:
+            return False
+
+    def _git(self, args: List[str], cwd: Path) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git"] + args,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+
+    def _reset_workspace(self, workspace: Path) -> None:
+        self._git(["reset", "--hard"], workspace)
+        self._git(["clean", "-fd"], workspace)
+
+    def _workspace_diff(self, workspace: Path) -> str:
+        self._git(["add", "-A"], workspace)
+        completed = self._git(
+            ["-c", "core.quotepath=false", "diff", "--cached", "--no-color"], workspace
+        )
+        return completed.stdout
+
+    def _workspace_files(self, workspace: Path) -> List[str]:
+        completed = self._git(["diff", "--cached", "--name-only"], workspace)
+        return [line.strip() for line in completed.stdout.splitlines() if line.strip()]
 
     def create_pull_request(self, patch: Patch, repo_dir: Optional[Path]) -> Optional[str]:
         if repo_dir is None or not self.settings.github_repo:

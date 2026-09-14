@@ -29,7 +29,7 @@ flowchart LR
 | 1. Chaos + collapse capture | `runner/cdr/telemetry.py`, `infra/` | telemetry samples, peak p95/p99, error rate, time-to-collapse, log signals |
 | 2. Classification | `runner/cdr/classifier.py` | failure category + confidence + evidence + suspect location |
 | 3. Repository-aware diagnosis | `runner/cdr/diagnoser.py`, `bob_client.py`, `watsonx.py` | analysis and concrete refactor plan: IBM Bob Shell reads the cloned repository (`--mode plan`), watsonx Granite is the alternative, deterministic rules the last resort |
-| 4. Patch + verification | `runner/cdr/patcher.py`, `verifier.py` | diff, branch, before/after comparison, stability verdict |
+| 4. Patch + verification | `runner/cdr/patcher.py`, `verifier.py` | Bob Shell applies the refactor inside the cloned repository (agent mode) and the resulting `git diff` becomes the patch; verification re-runs the same chaos scenario |
 
 ## Repository submission flow
 

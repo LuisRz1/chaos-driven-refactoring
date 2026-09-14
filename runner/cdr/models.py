@@ -109,6 +109,9 @@ class Patch:
     files_changed: List[str]
     diff: str
     pr_url: Optional[str] = None
+    source: str = "template"
+    bob_task_id: Optional[str] = None
+    bobcoins: Optional[float] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
