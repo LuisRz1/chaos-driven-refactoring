@@ -1,0 +1,21 @@
+name: checkout-latency-cascade
+target: GoogleCloudPlatform/microservices-demo
+commit: b9c7d2f
+mode: live
+load:
+  tool: k6
+  endpoint: http://localhost:8080/api/v1/cart
+  vus: 200
+  duration_s: 120
+  injection_at_s: 30
+chaos:
+  tool: toxiproxy
+  proxy: payment-service
+  fault: latency
+  attributes:
+    latency_ms: 800
+    jitter_ms: 100
+thresholds:
+  p95_ms: 500
+  error_rate: 0.05
+  collapse_error_rate: 0.25

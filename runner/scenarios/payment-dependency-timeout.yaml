@@ -1,0 +1,20 @@
+name: payment-dependency-timeout
+target: GoogleCloudPlatform/microservices-demo
+commit: b9c7d2f
+mode: mock
+load:
+  tool: k6
+  endpoint: http://localhost:8080/api/v1/checkout
+  vus: 150
+  duration_s: 120
+  injection_at_s: 30
+chaos:
+  tool: toxiproxy
+  proxy: payment-service
+  fault: abort
+  attributes:
+    timeout_ms: 0
+thresholds:
+  p95_ms: 500
+  error_rate: 0.05
+  collapse_error_rate: 0.25
