@@ -5,6 +5,31 @@ uses watsonx.ai Granite for runtime analysis — but every significant piece of 
 planned, written, reviewed and debugged with Bob in the loop. This is exactly what the hackathon
 asks for: a project that showcases IBM Bob IDE as a core component of the build.
 
+## Bob Shell (headless automation)
+
+Bob Shell 2.x brings Bob to the terminal and is used for scripted, evidence-producing tasks.
+
+```powershell
+# install (Windows)
+powershell -c "irm -Uri https://bob.ibm.com/download/bobshell.ps1 | iex"   # choose npm
+
+# authenticate with an Inference API key
+[Environment]::SetEnvironmentVariable('BOB_API_KEY', '<key>', 'User')
+
+# run a headless task and capture JSON evidence in bob_sessions/
+powershell -ExecutionPolicy Bypass -File scripts/bob-task.ps1 `
+  -Name "queue-unit-tests" -MaxCost 2 `
+  -Prompt "Work in this repository root. Add runner/tests/test_queue.py ... "
+```
+
+`scripts/bob-task.ps1` wraps `bob run --trust --accept-license --format json --mode agent
+--max-cost <n>` and stores the full JSON result (task id, duration, Bobcoins spent, tool calls,
+final message) as `bob_sessions/bobshell-<name>-<timestamp>.json`.
+
+Budget tracking: every task runs with an explicit `--max-cost`; the JSON evidence records
+`session_costs` so the team can keep the 50-Bobcoin trial budget under control. Tasks completed
+so far are indexed in `bob_sessions/README.md`.
+
 ## Where Bob sits in the "analyze a repository" flow
 
 Bob 2.0 is a development-time partner (IDE), not a runtime API, so the boundary is explicit:
