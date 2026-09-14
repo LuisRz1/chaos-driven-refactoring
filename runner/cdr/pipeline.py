@@ -8,6 +8,7 @@ from .config import Settings
 from .diagnoser import Diagnoser
 from .models import PhaseRecord, RunResult, Scenario, utc_now
 from .patcher import Patcher
+from .repair import BobRepairer
 from .telemetry import simulate_telemetry
 from .verifier import verify
 
@@ -30,6 +31,7 @@ class Pipeline:
         self.settings = settings
         self.diagnoser = Diagnoser(settings)
         self.patcher = Patcher(settings)
+        self.repairer = BobRepairer(settings)
 
     def run(
         self,
@@ -91,7 +93,19 @@ class Pipeline:
             {"finding": finding, "detail": classification_detail},
         )
 
-        diagnosis = self.diagnoser.diagnose(scenario, finding, telemetry)
+        repair = (
+            self.repairer.repair(scenario, finding, telemetry)
+            if self.repairer.available
+            else None
+        )
+        if repair is not None:
+            diagnosis, patch = repair
+        else:
+            diagnosis = self.diagnoser.diagnose(
+                scenario, finding, telemetry, exclude_bob=self.repairer.available
+            )
+            patch = self.patcher.build_patch(scenario, finding, diagnosis)
+
         if diagnosis.target_files:
             first = diagnosis.target_files[0]
             path, _, symbol = first.partition("#")
@@ -110,7 +124,6 @@ class Pipeline:
             )
         )
 
-        patch = self.patcher.build_patch(scenario, finding, diagnosis)
         if create_pr:
             patch.pr_url = self.patcher.create_pull_request(patch, self.settings.artifacts_dir.parent)
         _notify(

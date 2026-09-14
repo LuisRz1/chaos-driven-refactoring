@@ -110,8 +110,14 @@ class Diagnoser:
         self.client = WatsonxClient(settings)
         self.bob = BobClient(settings)
 
-    def diagnose(self, scenario: Scenario, finding: Finding, telemetry: Telemetry) -> Diagnosis:
-        for source in self._sources():
+    def diagnose(
+        self,
+        scenario: Scenario,
+        finding: Finding,
+        telemetry: Telemetry,
+        exclude_bob: bool = False,
+    ) -> Diagnosis:
+        for source in self._sources(exclude_bob):
             try:
                 if source == "bob" and self.bob.available:
                     return self._diagnose_with_bob(scenario, finding, telemetry)
@@ -121,10 +127,12 @@ class Diagnoser:
                 continue
         return self._fallback(finding)
 
-    def _sources(self):
+    def _sources(self, exclude_bob: bool = False):
         configured = (self.settings.analyzer or "auto").lower()
         if configured in ("bob", "watsonx", "rules"):
             return [configured]
+        if exclude_bob:
+            return ["watsonx", "rules"]
         return ["bob", "watsonx", "rules"]
 
     def _fallback(self, finding: Finding) -> Diagnosis:
