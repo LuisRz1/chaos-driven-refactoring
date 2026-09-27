@@ -16,7 +16,7 @@ How CDR addresses the four lablab.ai judging criteria, and where the evidence li
 | What judges look for | Evidence |
 | --- | --- |
 | High-priority problem | APM-to-code gap: chaos tools diagnose, APM localizes, AI agents code — nobody closes the loop (`README.md`, context doc §2.2) |
-| Quantified impact | p95 −95%, p99 −94%, error rate −99%, collapse eliminated, diagnosis 3.2 min vs 95 min manual (`docs/METRICS.md`) |
+| Quantified impact | p95, p99, error rate and collapse are recorded before and after under the identical live experiment; use the final run values in the submission (`docs/METRICS.md`) |
 | Money framing | Downtime > $300k/hour in FinTech/e-commerce; prevented-incident formula in `docs/METRICS.md` |
 | Clear target users | CTOs, DevOps leads and SRE teams in FinTech, e-commerce and streaming |
 
@@ -26,7 +26,7 @@ How CDR addresses the four lablab.ai judging criteria, and where the evidence li
 | --- | --- |
 | Blue ocean, not a clone | No existing tool combines (a) real telemetry-driven collapse, (b) business-logic rewrite inside the app repo and (c) autonomous verification under re-injected chaos |
 | Research-grounded novelty | ChaosEater (ASE 2025) automates chaos but only edits K8s config; AIOpsLab (MLSys 2025) shows mitigation is where agents fail (~55% best case) — CDR attacks mitigation with a verified PR |
-| Demo differentiation | Concurrency bisection path with parallel subagents isolating the exact concurrent section |
+| Demo differentiation | Fail-closed live loop: physical fault, real Bob diff, rebuilt container and identical re-test; concurrency bisection remains roadmap |
 
 ## Presentation
 

@@ -10,8 +10,8 @@ coding agents write code — but only when a human asks. CDR runs the full loop 
    repository (Online Boutique) running in staging.
 2. **Classify the root cause** — telemetry and logs mapped to a failure category with evidence
    (concurrency, memory leak, unresilient dependency, database saturation).
-3. **Diagnose with repository context** — IBM watsonx.ai (Granite) analyzes the affected service
-   with full repo context and proposes a concrete refactor.
+3. **Repair with repository context** — IBM Bob reads the affected service in a shallow clone,
+   applies the minimal refactor and returns the real repository diff.
 4. **Generate the PR and verify resilience** — the patch is applied and the exact same chaos
    scenario is re-executed to prove the system no longer collapses.
 
@@ -20,7 +20,7 @@ coding agents write code — but only when a human asks. CDR runs the full loop 
 | Path | Contents |
 | --- | --- |
 | `dashboard/` | Next.js 16 control room: run timeline, before/after telemetry, diagnosis, diff, verification |
-| `runner/` | Python pipeline: chaos orchestration, classification, watsonx diagnosis, patch + verification |
+| `runner/` | Python pipeline: live chaos, classification, IBM Bob repair, rebuild + verification |
 | `infra/` | Staging lab: Online Boutique subset (Docker Compose), k6 load, Toxiproxy faults |
 | `supabase/` | Postgres schema + RLS policies for run history |
 | `bob_sessions/` | Exported IBM Bob 2.0 task histories (hackathon evidence) |
@@ -53,8 +53,8 @@ python -m cdr watch --pace 6 # adds a pause per phase, useful to watch progress 
 The API route needs `SUPABASE_SERVICE_ROLE_KEY` on Vercel (server-side only); the worker needs
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` locally. The dashboard refreshes active runs every
 5 seconds and shows a progress bar with the current phase (queued → chaos → classification →
-diagnosis → verification). Bob 2.0 builds this flow at development time; the runtime repository
-analysis uses IBM watsonx Granite — see `docs/BOB_USAGE.md`.
+diagnosis → verification). Bob 2.0 is also the primary runtime repair agent; watsonx Granite and
+deterministic rules are fallback analyzers — see `docs/BOB_USAGE.md`.
 
 ### Runner (no Docker required in mock mode)
 
@@ -69,8 +69,8 @@ python -m cdr run --scenario scenarios/checkout-latency-cascade.yaml --mode mock
 ### Chaos staging (live mode)
 
 ```bash
-docker compose -f infra/target/docker-compose.yml up -d
-k6 run -e BASE_URL=http://localhost:8080 infra/load/checkout-load.js
+cd runner
+python -m cdr run --scenario scenarios/checkout-latency-cascade.yaml --mode live --sink all
 ```
 
 See `infra/README.md` for fault injection commands and `docs/DEPLOYMENT.md` for the full

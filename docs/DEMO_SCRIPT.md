@@ -13,11 +13,9 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
 
 - Show `infra/target/docker-compose.yml` and terminal:
   `docker compose -f infra/target/docker-compose.yml up -d`
-- Inject the fault:
-  `curl -X POST http://localhost:8474/proxies/payment-service/toxics ... latency 800ms`
-- Start k6: `k6 run -e BASE_URL=http://localhost:8080 infra/load/checkout-load.js`
-- Voice over: "800 ms of injected latency on the payment dependency is enough to collapse
-  checkout."
+- Show `runner/cdr/live.py`: the runner starts k6, injects the fault at the configured second and
+  always removes it after the experiment.
+- Voice over: "The same controlled payment fault is applied before and after Bob's change."
 
 ## 0:50–1:20 — Run the pipeline
 
@@ -25,23 +23,23 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
 - Or queue it from the dashboard ("Analyze a repository") and start the worker with
   `python -m cdr watch --pace 6`; the run card and detail page show the live progress bar moving
   through chaos → classification → diagnosis → verification.
-- Cut to the dashboard `/` and open the run: collapse reproduced at 74.5 s, p95 4,820 ms, error
-  rate 38.4%.
+- Cut to the dashboard `/` and open the run. Keep the `LIVE EVIDENCE` badge visible and read the
+  measured collapse time, p95 and error rate from the completed run; never substitute mock values.
 - Voice over: "Phase 1 captured the physical collapse."
 
 ## 1:20–1:50 — Classification and diagnosis
 
 - Show the finding card: `unresilient_dependency`, confidence 93%, evidence (goroutines blocked,
   no deadline in repo scan).
-- Show the diagnosis section (Granite) with the proposed refactor.
+- Show the Bob task id, Bobcoins, identified source file and real repository diff.
 - Voice over: "With full repository context, CDR proves the payment call has no deadline, no retry
   budget and no circuit breaker — and proposes the exact change."
 
 ## 1:50–2:30 — Patch and verification
 
 - Show the generated diff and PR link.
-- Show the verification panel: p95 236 ms, error rate 0.4%, "STABLE AFTER FIX", improvements
-  −95.1% / −99.0% / −100%.
+- Show the verification panel and read the measured before/after values from the live run. If the
+  patch does not stabilize the system, record another Bob repair rather than editing the metrics.
 - Voice over: "The same chaos scenario is re-executed against the patched code. No collapse."
 
 ## 2:30–3:00 — Business impact and Bob 2.0

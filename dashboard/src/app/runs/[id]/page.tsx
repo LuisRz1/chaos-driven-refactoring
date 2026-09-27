@@ -29,6 +29,7 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
   const isActive = isActiveStatus(run.status);
   const progress = getRunProgress(run, phases);
   const improvement = verification?.improvement_pct ?? {};
+  const isLiveEvidence = run.mode === "live" && run.summary.telemetry_source === "live";
 
   return (
     <div className="space-y-8">
@@ -76,6 +77,25 @@ export default async function RunDetailPage(props: PageProps<"/runs/[id]">) {
           ) : null}
         </div>
       </div>
+
+      <section
+        className={`rounded-xl border p-4 ${
+          isLiveEvidence
+            ? "border-emerald-500/25 bg-emerald-500/5"
+            : "border-amber-500/25 bg-amber-500/5"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className={`font-mono text-xs font-semibold ${isLiveEvidence ? "text-emerald-300" : "text-amber-300"}`}>
+            {isLiveEvidence ? "LIVE EVIDENCE" : "SIMULATED DEMONSTRATION"}
+          </p>
+          <p className="text-xs text-zinc-400">
+            {isLiveEvidence
+              ? "Measured with k6 + Toxiproxy before and after rebuilding the Bob-patched service."
+              : "Deterministic telemetry for UI and pipeline development; not a physical resilience claim."}
+          </p>
+        </div>
+      </section>
 
       <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <MetricCard

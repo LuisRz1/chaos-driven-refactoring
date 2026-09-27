@@ -33,6 +33,7 @@ export interface RunSummary {
   diagnosis_minutes_manual_estimate: number | null;
   diagnosis_minutes_ai: number | null;
   pr_url: string | null;
+  telemetry_source?: "live" | "simulation" | null;
 }
 
 export interface Run {

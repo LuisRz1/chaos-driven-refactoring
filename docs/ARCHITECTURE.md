@@ -99,8 +99,9 @@ against a shallow clone of the submitted repository with `--max-cost` guarding B
 
 ## Limitations (MVP)
 
-- Live-mode wiring exists for the chaos lab endpoints, but the verified path used in the demo is
-  mock mode plus a recorded live run; treat live orchestration as the next milestone.
+- Live mode is fail-closed: it requires Docker, k6, Toxiproxy and a real Bob patch. It records
+  custom checkout telemetry, rebuilds checkoutservice from Bob's edited clone and re-runs the
+  identical fault. Mock results are explicitly labelled as simulation in the dashboard.
 - Automatic PR creation is guarded and off by default (`--create-pr`).
 - Concurrency bisection is designed and scoped but implemented as the stretch path; the primary
   demo category is `unresilient_dependency`.

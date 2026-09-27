@@ -1,17 +1,19 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
+import { Counter, Rate, Trend } from "k6/metrics";
+
+const CHECKOUT_DURATION = new Trend("cdr_checkout_duration", true);
+const CHECKOUT_FAILED = new Rate("cdr_checkout_failed");
+const CHECKOUT_REQUESTS = new Counter("cdr_checkout_requests");
+const VUS = Number.parseInt(__ENV.CDR_VUS || "200", 10);
+const DURATION_S = Number.parseInt(__ENV.CDR_DURATION_S || "120", 10);
 
 export const options = {
   scenarios: {
     checkout_load: {
-      executor: "ramping-vus",
-      startVUs: 0,
-      stages: [
-        { duration: "20s", target: 120 },
-        { duration: "60s", target: 200 },
-        { duration: "30s", target: 200 },
-        { duration: "10s", target: 0 },
-      ],
+      executor: "constant-vus",
+      vus: VUS,
+      duration: `${DURATION_S}s`,
     },
   },
   thresholds: {
@@ -48,6 +50,9 @@ export default function () {
     credit_card_expiration_year: "2039",
     credit_card_cvv: "672",
   });
+  CHECKOUT_DURATION.add(checkout.timings.duration);
+  CHECKOUT_FAILED.add(checkout.status !== 200);
+  CHECKOUT_REQUESTS.add(1);
   check(checkout, { "checkout completed": (response) => response.status === 200 });
 
   sleep(1);

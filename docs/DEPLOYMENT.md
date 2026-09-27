@@ -7,7 +7,7 @@
 | Dashboard | Vercel | Root directory: `dashboard/` |
 | Database, realtime, storage | Supabase | Free tier is enough for the demo |
 | Runner | Local machine with Docker Desktop | IBM Cloud Code Engine as a stretch deployment |
-| AI diagnosis | IBM watsonx.ai | Granite models included in hackathon scope |
+| AI repair | IBM Bob Shell | Primary repository-aware repair path; Bobcoins capped per run |
 
 ## 1. Supabase
 
@@ -43,20 +43,25 @@ Environment variables:
 
 | Variable | Purpose |
 | --- | --- |
+| `BOB_API_KEY`, `BOB_BINARY` | enable IBM Bob repair through Bob Shell |
 | `WATSONX_API_KEY`, `WATSONX_PROJECT_ID` | enable Granite diagnosis (otherwise rule-based fallback) |
 | `WATSONX_MODEL_ID` | must stay within hackathon scope (`ibm/granite-3-8b-instruct` by default) |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | sync runs to the control room |
 | `SUPABASE_SCHEMA` | exposed schema for run tables (defaults to `cdr`) |
 | `CDR_GITHUB_REPO`, `GITHUB_TOKEN` | target for generated PRs (`--create-pr`) |
+| `CDR_DOCKER_BINARY`, `CDR_K6_BINARY` | override live tool paths |
+| `CDR_LIVE_BASE_URL`, `CDR_TOXIPROXY_URL` | override live lab endpoints |
 
 ## 4. Chaos lab (live mode)
 
 ```bash
-docker compose -f infra/target/docker-compose.yml up -d
-k6 run -e BASE_URL=http://localhost:8080 infra/load/checkout-load.js
+cd runner
+python -m cdr run --scenario scenarios/checkout-latency-cascade.yaml --mode live --sink all
 ```
 
-Fault injection and cleanup commands are documented in `infra/README.md`.
+The runner starts Compose, executes k6, injects and removes the Toxiproxy fault, builds the real
+Bob-patched checkoutservice image and repeats the experiment. Docker Desktop and k6 must already
+be installed. Fault injection and manual cleanup commands are documented in `infra/README.md`.
 
 ## 5. IBM Cloud Code Engine (stretch)
 

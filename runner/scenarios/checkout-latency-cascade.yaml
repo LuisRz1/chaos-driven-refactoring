@@ -1,6 +1,6 @@
 name: checkout-latency-cascade
 target: GoogleCloudPlatform/microservices-demo
-commit: b9c7d2f
+commit: cd1cb59f6fce3e2ccf08be7cea743e3784932d73
 mode: live
 load:
   tool: k6

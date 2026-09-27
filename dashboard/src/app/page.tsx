@@ -8,10 +8,10 @@ import { isActiveStatus } from "@/lib/progress";
 export const dynamic = "force-dynamic";
 
 const steps = [
-  { phase: "01", name: "Inject chaos", detail: "k6 load + toxiproxy faults on a real target repo" },
+  { phase: "01", name: "Break it", detail: "k6 load + Toxiproxy fault against a running target" },
   { phase: "02", name: "Classify", detail: "telemetry + logs → failure category with evidence" },
-  { phase: "03", name: "Refactor", detail: "repository-aware diagnosis and generated patch" },
-  { phase: "04", name: "Verify", detail: "same chaos scenario re-run on the patched code" },
+  { phase: "03", name: "Let Bob rewrite it", detail: "repository-aware diagnosis + real git diff" },
+  { phase: "04", name: "Prove it survives", detail: "same fault re-run on the rebuilt service" },
 ];
 
 export default async function Home() {
@@ -53,12 +53,11 @@ export default async function Home() {
           Resilience control plane
         </p>
         <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
-          Break the system on purpose. Ship the architecture that survives it.
+          Break it. Let Bob rewrite it. Prove it survives.
         </h1>
         <p className="max-w-3xl text-sm leading-relaxed text-zinc-400">
-          CDR injects load and faults into a real repository running in staging, captures the
-          physical collapse, classifies the root cause, generates a refactor PR with full
-          repository context and proves the fix by re-running the exact same scenario.
+          CDR turns a controlled production-style collapse into a repository-level refactor and
+          accepts the fix only after the rebuilt service survives the identical experiment.
         </p>
       </section>
 

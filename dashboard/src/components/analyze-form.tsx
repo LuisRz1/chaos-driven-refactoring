@@ -11,7 +11,7 @@ const scenarioOptions = [
 export function AnalyzeForm() {
   const router = useRouter();
   const [repoUrl, setRepoUrl] = useState("GoogleCloudPlatform/microservices-demo");
-  const [commit, setCommit] = useState("b9c7d2f");
+  const [commit, setCommit] = useState("cd1cb59f6fce3e2ccf08be7cea743e3784932d73");
   const [scenario, setScenario] = useState(scenarioOptions[0].value);
   const [mode, setMode] = useState("mock");
   const [status, setStatus] = useState<"idle" | "submitting" | "ok" | "error">("idle");
@@ -48,12 +48,12 @@ export function AnalyzeForm() {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-sm font-medium text-cyan-200">Analyze a repository</h2>
         <span className="text-[11px] text-zinc-500">
-          Runtime analysis: IBM watsonx Granite · CDR built with IBM Bob 2.0
+          Runtime repair: IBM Bob 2.0 · Granite and deterministic rules as fallbacks
         </span>
       </div>
       <p className="mt-1 text-xs leading-relaxed text-zinc-400">
-        Paste a GitHub repo. CDR queues a chaos run, classifies the collapse, proposes a refactor
-        and verifies it. The worker executes queued runs with{" "}
+        Paste a GitHub repo. Live mode requires Docker and k6, injects a physical fault, applies
+        Bob&apos;s real repository diff and reruns the identical experiment. The worker executes queued runs with{" "}
         <code className="rounded bg-white/5 px-1.5 py-0.5 font-mono">python -m cdr watch</code>.
       </p>
 

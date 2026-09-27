@@ -8,6 +8,7 @@ export function RunCard({ run }: { run: Run }) {
   const progress = getRunProgress(run);
   const active = isActiveStatus(run.status);
   const hasMetrics = run.status === "completed" || run.status === "failed";
+  const isLiveEvidence = run.mode === "live" && run.summary.telemetry_source === "live";
 
   return (
     <Link
@@ -21,7 +22,18 @@ export function RunCard({ run }: { run: Run }) {
             {run.scenario_name}
           </h3>
         </div>
-        <StatusBadge status={run.status} />
+        <div className="flex flex-col items-end gap-2">
+          <StatusBadge status={run.status} />
+          <span
+            className={`rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 ring-inset ${
+              isLiveEvidence
+                ? "bg-emerald-500/10 text-emerald-300 ring-emerald-500/30"
+                : "bg-amber-500/10 text-amber-300 ring-amber-500/30"
+            }`}
+          >
+            {isLiveEvidence ? "LIVE EVIDENCE" : "SIMULATION"}
+          </span>
+        </div>
       </div>
 
       {active ? (
@@ -72,7 +84,7 @@ export function RunCard({ run }: { run: Run }) {
           {run.target_repo}@{run.commit_sha}
         </span>
         <span>
-          {run.mode} · {formatDateTime(run.started_at)}
+          {formatDateTime(run.started_at)}
         </span>
       </div>
     </Link>

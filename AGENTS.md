@@ -71,7 +71,7 @@ vercel deploy --prod -y
 
 ## Verification (required before committing)
 
-1. `runner`: `ruff check .` and `pytest` (27 tests) — from `runner/` with the venv.
+1. `runner`: `ruff check .` and `pytest` (30 tests) — from `runner/` with the venv.
 2. `dashboard`: `npx tsc --noEmit`, `npm run lint`, `npm run build` — from `dashboard/`.
 3. CI mirrors both jobs in `.github/workflows/ci.yml`; main must stay green.
 

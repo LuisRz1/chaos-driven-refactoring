@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Optional
 from .classifier import classify
 from .config import Settings
 from .diagnoser import Diagnoser
+from .live import LiveLab
 from .models import PhaseRecord, RunResult, Scenario, utc_now
 from .patcher import Patcher
 from .repair import BobRepairer
@@ -46,7 +47,12 @@ class Pipeline:
         started_at = utc_now()
         phases = []
 
-        telemetry = simulate_telemetry(scenario, fixed=False, seed=42)
+        live_lab = LiveLab(self.settings, run_id) if run_mode == "live" else None
+        if live_lab is not None:
+            live_lab.prepare()
+            telemetry = live_lab.capture(scenario, "before")
+        else:
+            telemetry = simulate_telemetry(scenario, fixed=False, seed=42)
         collapsed = telemetry.time_to_collapse_s is not None
         chaos_detail = (
             "{} load at {} vus against {}, {} fault on {}, collapse at {}s".format(
@@ -133,7 +139,16 @@ class Pipeline:
             {"diagnosis": diagnosis, "patch": patch, "finding": finding, "detail": diagnosis_detail},
         )
 
-        telemetry_after = simulate_telemetry(scenario, fixed=True, seed=43)
+        if live_lab is not None:
+            from .repo_context import ensure_repo_clone
+
+            workspace = ensure_repo_clone(self.settings, scenario.target, "HEAD")
+            if workspace is None:
+                raise RuntimeError("live verification requires the cloned target repository")
+            live_lab.deploy_patch(workspace, patch)
+            telemetry_after = live_lab.capture(scenario, "after")
+        else:
+            telemetry_after = simulate_telemetry(scenario, fixed=True, seed=43)
         verification = verify(telemetry, telemetry_after, scenario)
         verification_detail = (
             f"same chaos scenario re-executed on patched branch {patch.branch} — "
@@ -173,6 +188,7 @@ class Pipeline:
             "diagnosis_minutes_manual_estimate": MANUAL_DIAGNOSIS_MINUTES,
             "diagnosis_minutes_ai": diagnosis_minutes_ai,
             "pr_url": patch.pr_url,
+            "telemetry_source": "live" if live_lab is not None else "simulation",
         }
 
         return RunResult(

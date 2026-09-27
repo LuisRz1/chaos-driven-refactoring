@@ -51,9 +51,9 @@ const runOne: Run = {
   scenario_id: "scenario-checkout-latency",
   scenario_name: "checkout-latency-cascade",
   status: "completed",
-  mode: "live",
+  mode: "mock",
   target_repo: "GoogleCloudPlatform/microservices-demo",
-  commit_sha: "b9c7d2f",
+  commit_sha: "cd1cb59",
   started_at: "2026-09-25T16:12:04Z",
   finished_at: "2026-09-25T16:58:31Z",
   collapse_detected: true,
@@ -68,7 +68,8 @@ const runOne: Run = {
     stable_after_fix: true,
     diagnosis_minutes_manual_estimate: 95,
     diagnosis_minutes_ai: 3.2,
-    pr_url: "https://github.com/LuisRz1/microservices-demo/pull/1",
+    pr_url: null,
+    telemetry_source: "simulation",
   },
 };
 
@@ -80,7 +81,7 @@ const runTwo: Run = {
   status: "verifying",
   mode: "mock",
   target_repo: "GoogleCloudPlatform/microservices-demo",
-  commit_sha: "b9c7d2f",
+  commit_sha: "cd1cb59",
   started_at: "2026-09-26T09:41:12Z",
   finished_at: null,
   collapse_detected: true,
@@ -96,6 +97,7 @@ const runTwo: Run = {
     diagnosis_minutes_manual_estimate: 90,
     diagnosis_minutes_ai: 2.8,
     pr_url: null,
+    telemetry_source: "simulation",
   },
 };
 
@@ -126,7 +128,7 @@ const phasesRunOne: PhaseEvent[] = [
     phase: "diagnosis",
     status: "done",
     label: "Repository-aware diagnosis",
-    detail: "granite-3-8b-instruct analyzed checkoutservice with full repo context",
+    detail: "deterministic fallback produced an illustrative repository-aware diagnosis",
     created_at: "2026-09-25T16:38:47Z",
   },
   {
@@ -199,7 +201,7 @@ const findingRunOne: Finding = {
 const diagnosisRunOne: Diagnosis = {
   id: "diagnosis-1",
   finding_id: findingRunOne.id,
-  model: "ibm/granite-3-8b-instruct",
+  model: "rule-based-fallback",
   analysis_md: [
     "## Analysis",
     "",
@@ -220,7 +222,7 @@ const patchRunOne: Patch = {
   id: "patch-1",
   run_id: runOne.id,
   branch: "cdr/fix-checkout-payment-timeout",
-  pr_url: "https://github.com/LuisRz1/microservices-demo/pull/1",
+  pr_url: null,
   files_changed: ["src/checkoutservice/main.go"],
   diff: [
     "--- a/src/checkoutservice/main.go",
@@ -242,6 +244,7 @@ const patchRunOne: Patch = {
     "+		return nil, status.Errorf(codes.Unavailable, \"payment unavailable: %v\", err)",
     "	}",
   ].join("\n"),
+  source: "template",
 };
 
 const verificationRunOne: Verification = {

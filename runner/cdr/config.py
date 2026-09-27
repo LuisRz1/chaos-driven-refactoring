@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict
@@ -57,6 +58,14 @@ class Settings:
     bob_patch_max_cost: float = field(
         default_factory=lambda: float(_env("CDR_BOB_PATCH_MAX_COST", "2") or 2)
     )
+    docker_binary: str = field(default_factory=lambda: _env("CDR_DOCKER_BINARY", "docker"))
+    k6_binary: str = field(default_factory=lambda: _env("CDR_K6_BINARY", "k6"))
+    live_base_url: str = field(
+        default_factory=lambda: _env("CDR_LIVE_BASE_URL", "http://localhost:8080")
+    )
+    toxiproxy_url: str = field(
+        default_factory=lambda: _env("CDR_TOXIPROXY_URL", "http://localhost:8474")
+    )
 
     @property
     def watsonx_configured(self) -> bool:
@@ -78,4 +87,8 @@ class Settings:
             "clone_repos": str(self.clone_repos),
             "supabase_configured": str(self.supabase_configured),
             "github_repo": self.github_repo or "not set",
+            "live_base_url": self.live_base_url,
+            "toxiproxy_url": self.toxiproxy_url,
+            "docker_available": str(shutil.which(self.docker_binary) is not None),
+            "k6_available": str(shutil.which(self.k6_binary) is not None),
         }

@@ -39,7 +39,14 @@ def ensure_repo_clone(settings: Settings, repo: str, commit: str) -> Optional[Pa
             if clone.returncode != 0:
                 return None
         if commit and commit not in ("main", "master", "HEAD"):
-            _run_git(["checkout", "--force", commit], cwd=dest, timeout=90)
+            checkout = _run_git(["checkout", "--force", commit], cwd=dest, timeout=90)
+            if checkout.returncode != 0:
+                fetched = _run_git(["fetch", "--depth", "1", "origin", commit], cwd=dest, timeout=180)
+                if fetched.returncode != 0:
+                    return None
+                checkout = _run_git(["checkout", "--force", "FETCH_HEAD"], cwd=dest, timeout=90)
+                if checkout.returncode != 0:
+                    return None
         return dest
     except Exception:
         return None
