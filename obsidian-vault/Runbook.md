@@ -44,10 +44,10 @@ The dashboard updates every 5 seconds; the detail page shows the phase timeline 
 ```powershell
 docker compose -f infra\target\docker-compose.yml up -d
 # inject latency
-curl -s -X POST http://localhost:8474/proxies/payment-service/toxics -H "Content-Type: application/json" -d '{"name":"latency","type":"latency","attributes":{"latency":800,"jitter":100}}'
+curl -s -X POST http://localhost:8474/proxies/email-service/toxics -H "Content-Type: application/json" -d '{"name":"latency","type":"latency","attributes":{"latency":800,"jitter":100}}'
 k6 run -e BASE_URL=http://localhost:8080 infra\load\checkout-load.js
 # remove the fault
-curl -s -X DELETE http://localhost:8474/proxies/payment-service/toxics/latency
+curl -s -X DELETE http://localhost:8474/proxies/email-service/toxics/latency
 ```
 
 ## Deploy the dashboard

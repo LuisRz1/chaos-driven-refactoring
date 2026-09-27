@@ -15,7 +15,7 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
   `docker compose -f infra/target/docker-compose.yml up -d`
 - Show `runner/cdr/live.py`: the runner starts k6, injects the fault at the configured second and
   always removes it after the experiment.
-- Voice over: "The same controlled payment fault is applied before and after Bob's change."
+- Voice over: "The same controlled email-service fault is applied before and after Bob's change."
 
 ## 0:50–1:20 — Run the pipeline
 
@@ -29,11 +29,11 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
 
 ## 1:20–1:50 — Classification and diagnosis
 
-- Show the finding card: `unresilient_dependency`, confidence 93%, evidence (goroutines blocked,
-  no deadline in repo scan).
+- Show the finding card: `unresilient_dependency`, confidence 86%, and the measured 919.6 ms p95
+  after the email-service fault.
 - Show the Bob task id, Bobcoins, identified source file and real repository diff.
-- Voice over: "With full repository context, CDR proves the payment call has no deadline, no retry
-  budget and no circuit breaker — and proposes the exact change."
+- Voice over: "With full repository context, Bob finds that optional email confirmation consumes
+  the checkout latency budget and applies a 200 ms child context without touching payment."
 
 ## 1:50–2:30 — Patch and verification
 
@@ -45,8 +45,8 @@ proves resilience. Record at 1080p with the dashboard in a browser and a termina
 ## 2:30–3:00 — Business impact and Bob 2.0
 
 - Show `docs/METRICS.md` numbers and the formula slide.
-- Voice over: "Diagnosis drops from 95 minutes of SRE work to 3.2 minutes; the incident class is
-  eliminated, not hidden behind autoscaling."
+- Voice over: "Bob applies the one-file repair in 15.89 seconds and 0.083248 Bobcoins; the same
+  physical fault no longer collapses checkout."
 - Close on `bob_sessions/`: "Built with IBM Bob 2.0 — agent mode, parallel tasks and subagents —
   every task session exported for judging."
 

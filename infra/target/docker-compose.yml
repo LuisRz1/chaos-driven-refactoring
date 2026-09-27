@@ -10,13 +10,18 @@ services:
       - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
       - CURRENCY_SERVICE_ADDR=currencyservice:7000
       - CART_SERVICE_ADDR=cartservice:7070
+      - RECOMMENDATION_SERVICE_ADDR=recommendationservice:8080
       - CHECKOUT_SERVICE_ADDR=checkoutservice:5050
       - SHIPPING_SERVICE_ADDR=shippingservice:50051
+      - AD_SERVICE_ADDR=adservice:9555
+      - SHOPPING_ASSISTANT_SERVICE_ADDR=shoppingassistantservice:80
       - DISABLE_PROFILER=1
     depends_on:
       - checkoutservice
       - productcatalogservice
       - cartservice
+      - recommendationservice
+      - adservice
 
   checkoutservice:
     image: us-central1-docker.pkg.dev/google-samples/microservices-demo/checkoutservice:v0.10.3
@@ -24,13 +29,14 @@ services:
       - PORT=5050
       - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
       - SHIPPING_SERVICE_ADDR=shippingservice:50051
-      - PAYMENT_SERVICE_ADDR=toxiproxy:8666
-      - EMAIL_SERVICE_ADDR=emailservice:5000
+      - PAYMENT_SERVICE_ADDR=paymentservice:50051
+      - EMAIL_SERVICE_ADDR=toxiproxy:8666
       - CURRENCY_SERVICE_ADDR=currencyservice:7000
       - CART_SERVICE_ADDR=cartservice:7070
       - DISABLE_PROFILER=1
     depends_on:
       - paymentservice
+      - emailservice
       - toxiproxy
 
   paymentservice:
@@ -41,19 +47,34 @@ services:
 
   toxiproxy:
     image: ghcr.io/shopify/toxiproxy:2.9.0
-    command: ["-config", "/config/toxiproxy.json"]
+    command: ["-host", "0.0.0.0", "-config", "/config/toxiproxy.json"]
     volumes:
       - ./../chaos/toxiproxy.json:/config/toxiproxy.json:ro
     ports:
       - "8474:8474"
       - "8666:8666"
     depends_on:
-      - paymentservice
+      - emailservice
 
   productcatalogservice:
     image: us-central1-docker.pkg.dev/google-samples/microservices-demo/productcatalogservice:v0.10.3
     environment:
       - PORT=3550
+      - DISABLE_PROFILER=1
+
+  recommendationservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/recommendationservice:v0.10.3
+    environment:
+      - PORT=8080
+      - PRODUCT_CATALOG_SERVICE_ADDR=productcatalogservice:3550
+      - DISABLE_PROFILER=1
+    depends_on:
+      - productcatalogservice
+
+  adservice:
+    image: us-central1-docker.pkg.dev/google-samples/microservices-demo/adservice:v0.10.3
+    environment:
+      - PORT=9555
       - DISABLE_PROFILER=1
 
   cartservice:

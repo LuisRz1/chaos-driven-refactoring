@@ -60,7 +60,7 @@ video — that is the "application of technology" evidence.
 ## Workflow per phase
 
 1. **Phase 1 — chaos capture**: Bob generates the compose subset, the k6 scenario and the
-   Toxiproxy wiring; reviews the address graph (`checkoutservice → toxiproxy → paymentservice`).
+   Toxiproxy wiring; reviews the address graph (`checkoutservice → toxiproxy → emailservice`).
 2. **Phase 2 — classification**: Bob implements the deterministic signal-to-category rules and
    their tests.
 3. **Phase 3 — diagnosis**: Bob writes the watsonx client (IAM token flow, generation endpoint,

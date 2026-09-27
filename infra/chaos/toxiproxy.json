@@ -1,10 +1,8 @@
-{
-  "proxies": [
-    {
-      "name": "payment-service",
-      "listen": "0.0.0.0:8666",
-      "upstream": "paymentservice:50051",
-      "enabled": true
-    }
-  ]
-}
+[
+  {
+    "name": "email-service",
+    "listen": "0.0.0.0:8666",
+    "upstream": "emailservice:5000",
+    "enabled": true
+  }
+]

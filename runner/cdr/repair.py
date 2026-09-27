@@ -18,14 +18,20 @@ PROMPT_TEMPLATE = "\n".join(
         "A chaos experiment reproduced a production collapse with this signature:",
         "- Failure category: {category}",
         "- Symptoms: {evidence}",
+        "- Faulted dependency: {dependency} ({fault}, {attributes})",
+        "- Checkout p95 budget: {p95_ms} ms",
+        "- Causal source location: {file_path}::{symbol}",
         "",
         "Do this now, in this session:",
-        "1. Read at most 6 of the most relevant source files to find where this failure class "
-        "can originate in THIS codebase.",
-        "2. Immediately apply the minimal production-quality fix, editing at most 3 files.",
+        "1. Read at most 6 source files around {file_path} to confirm the failure path.",
+        "2. Immediately apply the minimal production-quality fix in {file_path}, editing at most "
+        "3 source files total.",
         "3. Do not create documentation files or plan files, do not touch tests, lockfiles or CI.",
         "4. Do not run builds, installers or test suites.",
-        "5. After the edits are saved, reply exactly in this format:",
+        "5. Do not edit Kubernetes manifests, deployment configuration or infrastructure files.",
+        "6. Preserve mandatory checkout operations and successful responses; degrade only the "
+        "faulted optional dependency when the code shows that is safe.",
+        "7. After the edits are saved, reply exactly in this format:",
         "ANALYSIS:",
         "<concise markdown analysis of the root cause in this repository>",
         "FILES:",
@@ -59,6 +65,12 @@ class BobRepairer:
             commit=scenario.commit,
             category=finding.category,
             evidence=evidence,
+            dependency=scenario.chaos.proxy,
+            fault=scenario.chaos.fault,
+            attributes=scenario.chaos.attributes,
+            p95_ms=scenario.thresholds.p95_ms,
+            file_path=finding.file_path,
+            symbol=finding.symbol,
         )
         result = self.bob.run(
             prompt,
@@ -70,6 +82,9 @@ class BobRepairer:
         diff = workspace_diff(workspace)
         changed_files = workspace_files(workspace)
         if not changed_files or not diff.strip():
+            return None
+        if len(changed_files) > 3 or finding.file_path not in changed_files:
+            reset_workspace(workspace)
             return None
 
         analysis_md, _, proposed_change = _parse_sections(result.text)

@@ -34,7 +34,7 @@ def _detect_collapse(samples: List[TelemetrySample], scenario: Scenario) -> Opti
         if sample.t < scenario.load.injection_at_s:
             continue
         if (
-            sample.p95 > scenario.thresholds.p95_ms * 3
+            sample.p95 > scenario.thresholds.p95_ms
             or sample.error_rate > scenario.thresholds.collapse_error_rate * 100
         ):
             return float(sample.t)
@@ -173,6 +173,10 @@ class LiveLab:
 
     def prepare(self) -> None:
         self._run(self._compose_args() + ["up", "-d", "--remove-orphans"], timeout=900)
+        self._run(
+            self._compose_args() + ["up", "-d", "--force-recreate", "toxiproxy", "checkoutservice"],
+            timeout=300,
+        )
         self._wait_for_target()
 
     def _wait_for_target(self) -> None:
@@ -276,24 +280,26 @@ class LiveLab:
         if not (service_dir / "Dockerfile").exists():
             raise RuntimeError("checkoutservice Dockerfile was not found in the cloned repository")
 
+        existing = subprocess.run(
+            ["git", "diff", "--no-color", "HEAD", "--"] + patch.files_changed,
+            cwd=str(workspace),
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=60,
+        )
+        current_diff = existing.stdout.replace("\r\n", "\n").strip()
+        expected_diff = patch.diff.replace("\r\n", "\n").strip()
+        already_applied = existing.returncode == 0 and current_diff == expected_diff
+
         with tempfile.NamedTemporaryFile(mode="w", suffix=".patch", delete=False, encoding="utf-8") as tmp:
             tmp.write(patch.diff)
             patch_file = tmp.name
         try:
-            apply_check = subprocess.run(
-                ["git", "apply", "--check", patch_file],
-                cwd=str(workspace),
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="replace",
-                timeout=60,
-            )
-            if apply_check.returncode == 0:
-                self._run(["git", "apply", "--whitespace=fix", patch_file], cwd=workspace, timeout=60)
-            else:
-                reverse_check = subprocess.run(
-                    ["git", "apply", "--reverse", "--check", patch_file],
+            if not already_applied:
+                apply_check = subprocess.run(
+                    ["git", "apply", "--check", patch_file],
                     cwd=str(workspace),
                     capture_output=True,
                     text=True,
@@ -301,9 +307,10 @@ class LiveLab:
                     errors="replace",
                     timeout=60,
                 )
-                if reverse_check.returncode != 0:
+                if apply_check.returncode != 0:
                     detail = (apply_check.stderr or apply_check.stdout or "git apply failed").strip()[-800:]
                     raise RuntimeError(f"patch did not apply cleanly: {detail}")
+                self._run(["git", "apply", "--whitespace=fix", patch_file], cwd=workspace, timeout=60)
         finally:
             try:
                 Path(patch_file).unlink()

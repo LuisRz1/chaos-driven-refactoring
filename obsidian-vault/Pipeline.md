@@ -62,7 +62,7 @@ target: GoogleCloudPlatform/microservices-demo
 commit: b9c7d2f
 mode: live
 load: { tool: k6, endpoint: ..., vus: 200, duration_s: 120, injection_at_s: 30 }
-chaos: { tool: toxiproxy, proxy: payment-service, fault: latency, attributes: { latency_ms: 800 } }
+chaos: { tool: toxiproxy, proxy: email-service, fault: latency, attributes: { latency_ms: 800 } }
 thresholds: { p95_ms: 500, error_rate: 0.05, collapse_error_rate: 0.25 }
 ```
 

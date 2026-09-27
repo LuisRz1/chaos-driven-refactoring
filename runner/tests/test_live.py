@@ -52,6 +52,26 @@ def test_parse_k6_json_rejects_empty_output(tmp_path):
         parse_k6_json(output, scenario)
 
 
+def test_parse_k6_json_detects_threshold_breach(tmp_path):
+    scenario = load_scenario(SCENARIOS_DIR / "checkout-latency-cascade.yaml")
+    scenario.load.injection_at_s = 3
+    output = tmp_path / "k6.jsonl"
+    rows = []
+    for second, latency in [(0, 200), (3, 600), (6, 650)]:
+        rows.extend(
+            [
+                _point("cdr_checkout_duration", second, latency),
+                _point("cdr_checkout_failed", second, 0),
+                _point("cdr_checkout_requests", second, 1),
+            ]
+        )
+    output.write_text("\n".join(json.dumps(row) for row in rows), encoding="utf-8")
+
+    telemetry = parse_k6_json(output, scenario)
+
+    assert telemetry.time_to_collapse_s == 3
+
+
 def test_live_deploy_requires_real_bob_patch(tmp_path):
     settings = Settings()
     settings.artifacts_dir = tmp_path / "artifacts"

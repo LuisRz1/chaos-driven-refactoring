@@ -9,67 +9,83 @@ import type {
   Verification,
 } from "./types";
 
-function sample(t: number, p95: number, errorRate: number, rps: number): TelemetrySample {
-  return {
-    t,
-    p95: Math.round(p95),
-    p99: Math.round(p95 * 1.55),
-    errorRate: Number(errorRate.toFixed(2)),
-    rps: Math.round(rps),
-  };
-}
-
 function beforeSeries(): TelemetrySample[] {
-  const points: TelemetrySample[] = [];
-  for (let t = 0; t <= 117; t += 3) {
-    const injecting = t >= 30;
-    const ramp = injecting ? Math.min(1, (t - 30) / 45) : 0;
-    const p95 = 182 + t * 0.9 + Math.pow(ramp, 2.4) * 3100;
-    const errorRate = t < 45 ? 0.2 : Math.min(38.4, Math.pow((t - 45) / 33, 2) * 44);
-    const rps = 640 - Math.pow(ramp, 1.6) * 355;
-    points.push(sample(t, p95, errorRate, rps));
-  }
-  return points;
+  return [
+    { t: 0, p95: 434.6, p99: 460.4, errorRate: 0, rps: 170.7 },
+    { t: 6, p95: 79.8, p99: 90.5, errorRate: 0, rps: 186.3 },
+    { t: 12, p95: 36.3, p99: 48.4, errorRate: 0, rps: 187.7 },
+    { t: 18, p95: 27, p99: 30.7, errorRate: 0, rps: 186.7 },
+    { t: 24, p95: 29, p99: 32, errorRate: 0, rps: 187.7 },
+    { t: 30, p95: 918.4, p99: 927.3, errorRate: 0, rps: 117 },
+    { t: 36, p95: 914.3, p99: 919.1, errorRate: 0, rps: 127.7 },
+    { t: 42, p95: 925, p99: 936.8, errorRate: 0, rps: 122.7 },
+    { t: 48, p95: 922.6, p99: 936.3, errorRate: 0, rps: 115 },
+    { t: 54, p95: 921.5, p99: 930.4, errorRate: 0, rps: 106.3 },
+    { t: 60, p95: 923.7, p99: 934.5, errorRate: 0, rps: 99.3 },
+    { t: 66, p95: 923.2, p99: 939.3, errorRate: 0, rps: 99.7 },
+    { t: 72, p95: 918.4, p99: 928.5, errorRate: 0, rps: 93.7 },
+    { t: 78, p95: 923.2, p99: 926.4, errorRate: 0, rps: 92 },
+    { t: 84, p95: 920.8, p99: 928.4, errorRate: 0, rps: 92.7 },
+    { t: 90, p95: 918.7, p99: 925.3, errorRate: 0, rps: 95.7 },
+    { t: 96, p95: 926, p99: 938.9, errorRate: 0, rps: 100 },
+    { t: 102, p95: 931.5, p99: 940.5, errorRate: 0, rps: 106.7 },
+    { t: 108, p95: 922.2, p99: 933.4, errorRate: 0, rps: 111.3 },
+    { t: 114, p95: 925.5, p99: 929.7, errorRate: 0, rps: 108.7 },
+    { t: 120, p95: 913.5, p99: 913.6, errorRate: 0, rps: 12 },
+  ];
 }
 
 function afterSeries(): TelemetrySample[] {
-  const points: TelemetrySample[] = [];
-  for (let t = 0; t <= 117; t += 3) {
-    const injecting = t >= 30 && t <= 62;
-    const bump = injecting ? Math.sin(((t - 30) / 32) * Math.PI) * 58 : 0;
-    const p95 = 204 + bump + Math.sin(t / 6.5) * 12;
-    const errorRate = 0.32 + Math.abs(Math.sin(t / 9)) * 0.18;
-    const rps = 642 - bump * 0.4;
-    points.push(sample(t, p95, errorRate, rps));
-  }
-  return points;
+  return [
+    { t: 0, p95: 967.5, p99: 981.2, errorRate: 0, rps: 159.7 },
+    { t: 6, p95: 725.1, p99: 738.1, errorRate: 0, rps: 167.7 },
+    { t: 12, p95: 706.5, p99: 721.3, errorRate: 0, rps: 168 },
+    { t: 18, p95: 531.9, p99: 566.2, errorRate: 0, rps: 165.7 },
+    { t: 24, p95: 123.3, p99: 141, errorRate: 0, rps: 161.3 },
+    { t: 30, p95: 277.1, p99: 291.4, errorRate: 0, rps: 149.3 },
+    { t: 36, p95: 242.5, p99: 247.7, errorRate: 0, rps: 154.3 },
+    { t: 42, p95: 244.8, p99: 257.8, errorRate: 0, rps: 156 },
+    { t: 48, p95: 246, p99: 258.5, errorRate: 0, rps: 153.7 },
+    { t: 54, p95: 241.4, p99: 248, errorRate: 0, rps: 156.3 },
+    { t: 60, p95: 245.9, p99: 253.2, errorRate: 0, rps: 155 },
+    { t: 66, p95: 249.1, p99: 257, errorRate: 0, rps: 150.7 },
+    { t: 72, p95: 273.2, p99: 293.3, errorRate: 0, rps: 148.7 },
+    { t: 78, p95: 258.8, p99: 269.9, errorRate: 0, rps: 154 },
+    { t: 84, p95: 246.7, p99: 262, errorRate: 0, rps: 156.7 },
+    { t: 90, p95: 241.8, p99: 247.2, errorRate: 0, rps: 153.7 },
+    { t: 96, p95: 243.1, p99: 250.4, errorRate: 0, rps: 155 },
+    { t: 102, p95: 243.4, p99: 260.7, errorRate: 0, rps: 154.7 },
+    { t: 108, p95: 270.7, p99: 288.1, errorRate: 0, rps: 152.3 },
+    { t: 114, p95: 259, p99: 270, errorRate: 0, rps: 155.7 },
+    { t: 120, p95: 253.7, p99: 268.6, errorRate: 0, rps: 30 },
+  ];
 }
 
 const runOne: Run = {
-  id: "run-6f2a91c4",
+  id: "run-2738beb5",
   project_id: "project-online-boutique",
   scenario_id: "scenario-checkout-latency",
   scenario_name: "checkout-latency-cascade",
   status: "completed",
-  mode: "mock",
+  mode: "live",
   target_repo: "GoogleCloudPlatform/microservices-demo",
   commit_sha: "cd1cb59",
-  started_at: "2026-09-25T16:12:04Z",
-  finished_at: "2026-09-25T16:58:31Z",
+  started_at: "2026-09-27T03:57:19Z",
+  finished_at: "2026-09-27T04:11:41Z",
   collapse_detected: true,
   summary: {
-    time_to_collapse_s: 74.5,
-    p95_before_ms: 4820,
-    p99_before_ms: 7310,
-    error_rate_before: 38.4,
-    p95_after_ms: 236,
-    p99_after_ms: 412,
-    error_rate_after: 0.4,
+    time_to_collapse_s: 30,
+    p95_before_ms: 919.6,
+    p99_before_ms: 930.4,
+    error_rate_before: 0,
+    p95_after_ms: 691.1,
+    p99_after_ms: 833,
+    error_rate_after: 0,
     stable_after_fix: true,
-    diagnosis_minutes_manual_estimate: 95,
-    diagnosis_minutes_ai: 3.2,
+    diagnosis_minutes_manual_estimate: 90,
+    diagnosis_minutes_ai: 0.3,
     pr_url: null,
-    telemetry_source: "simulation",
+    telemetry_source: "live",
   },
 };
 
@@ -110,8 +126,8 @@ const phasesRunOne: PhaseEvent[] = [
     phase: "chaos",
     status: "done",
     label: "Chaos injection + collapse capture",
-    detail: "k6 checkout load at 640 rps, toxiproxy latency 800ms on payment-service, collapse at 74.5s",
-    created_at: "2026-09-25T16:12:04Z",
+    detail: "Real k6 load, 800 ms latency on email-service, reproducible collapse at 30s",
+    created_at: "2026-09-27T03:57:19Z",
   },
   {
     id: "phase-2",
@@ -119,8 +135,8 @@ const phasesRunOne: PhaseEvent[] = [
     phase: "classification",
     status: "done",
     label: "Root cause classification",
-    detail: "unresilient_dependency (confidence 0.93) — gRPC call without deadline",
-    created_at: "2026-09-25T16:34:22Z",
+    detail: "unresilient_dependency (confidence 0.86) — optional email RPC exceeds the checkout budget",
+    created_at: "2026-09-27T03:59:23Z",
   },
   {
     id: "phase-3",
@@ -128,8 +144,8 @@ const phasesRunOne: PhaseEvent[] = [
     phase: "diagnosis",
     status: "done",
     label: "Repository-aware diagnosis",
-    detail: "deterministic fallback produced an illustrative repository-aware diagnosis",
-    created_at: "2026-09-25T16:38:47Z",
+    detail: "IBM Bob task fdbad60b applied a 200 ms child context to email confirmation",
+    created_at: "2026-09-27T04:05:31Z",
   },
   {
     id: "phase-4",
@@ -137,8 +153,8 @@ const phasesRunOne: PhaseEvent[] = [
     phase: "verification",
     status: "done",
     label: "PR generation + resilience verification",
-    detail: "Same chaos scenario re-executed on patched code — stable, p95 236 ms",
-    created_at: "2026-09-25T16:58:31Z",
+    detail: "Same live scenario re-executed — stable, p95 691.1 ms, 0% errors, no collapse",
+    created_at: "2026-09-27T04:11:41Z",
   },
 ];
 
@@ -185,14 +201,14 @@ const findingRunOne: Finding = {
   id: "finding-1",
   run_id: runOne.id,
   category: "unresilient_dependency",
-  confidence: 0.93,
+  confidence: 0.86,
   root_cause:
-    "checkoutservice calls payment-service over gRPC without a context deadline, retry budget or circuit breaker. When injected latency raises payment latency above the caller timeout, checkout goroutines accumulate, thread pools saturate and the whole checkout path collapses.",
+    "PlaceOrder waits synchronously for optional email confirmation using the request context. Injected email latency pushes checkout beyond its p95 budget even though email failure is already non-fatal.",
   evidence: [
-    "p95 latency on checkout.path rose from 182 ms to 4,820 ms after injection",
-    "61 goroutines blocked in grpc.Invoke on payment-service",
-    "No deadline or circuit breaker found on the payment client in the repository scan",
-    "Error rate 5xx peaked at 38.4% with deadline-exceeded signatures",
+    "Toxiproxy injected 800 ms latency on email-service at t=30s",
+    "Checkout p95 reached 919.6 ms while the error rate stayed at 0%",
+    "PlaceOrder blocks on sendOrderConfirmation even though failure is warning-only",
+    "The same k6 scenario reproduced the threshold breach from t=30s onward",
   ],
   file_path: "src/checkoutservice/main.go",
   symbol: "PlaceOrder",
@@ -201,64 +217,57 @@ const findingRunOne: Finding = {
 const diagnosisRunOne: Diagnosis = {
   id: "diagnosis-1",
   finding_id: findingRunOne.id,
-  model: "rule-based-fallback",
+  model: "bob-shell",
   analysis_md: [
     "## Analysis",
     "",
-    "`PlaceOrder` fans out to three downstream services. The payment leg uses the shared gRPC client with no per-call deadline and no failure isolation. Under injected latency every request holds a goroutine until the transport-level timeout fires, so throughput collapses long before errors surface.",
+    "`PlaceOrder` completes payment, shipping and cart cleanup before synchronously calling the optional email service. The call inherits the full request context, so 800 ms of downstream latency is paid by every checkout even though an email error does not fail the order.",
     "",
     "## Proposed refactor",
     "",
-    "1. Apply a 400 ms `context.WithTimeout` deadline to the payment RPC.",
-    "2. Add a retry budget with jitter (max 2 attempts) only for idempotent charge calls.",
-    "3. Wrap the payment client with a circuit breaker that opens after 20 consecutive failures and half-opens after 5 s.",
-    "4. Reuse the same pattern already present in `shippingservice` to stay consistent with the repository.",
+    "1. Derive a 200 ms child context for the optional email confirmation RPC.",
+    "2. Cancel the child context when `PlaceOrder` returns to release the timer.",
+    "3. Preserve payment, shipping and successful order-response semantics.",
   ].join("\n"),
   proposed_change:
-    "Add context deadline, bounded retry with jitter and a circuit breaker around the payment RPC in PlaceOrder.",
+    "Bound optional email confirmation to 200 ms without changing mandatory checkout operations.",
+  bob_task_id: "fdbad60b579de545555fd8ef043b9bf1",
+  bobcoins: 0.083248,
+  target_files: ["src/checkoutservice/main.go"],
 };
 
 const patchRunOne: Patch = {
   id: "patch-1",
   run_id: runOne.id,
-  branch: "cdr/fix-checkout-payment-timeout",
+  branch: "cdr/fix-checkout-email-latency",
   pr_url: null,
   files_changed: ["src/checkoutservice/main.go"],
   diff: [
     "--- a/src/checkoutservice/main.go",
     "+++ b/src/checkoutservice/main.go",
-    "@@ -184,9 +184,16 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq) (*pb.PlaceOrderResp, error) {",
-    "-	resp, err := cs.paymentSvc.Charge(ctx, &pb.ChargeRequest{",
-    "+	payCtx, cancel := context.WithTimeout(ctx, 400*time.Millisecond)",
-    "+	defer cancel()",
-    "+",
-    "+	resp, err := cs.paymentBreaker.Execute(func() (any, error) {",
-    "+		return cs.paymentSvc.Charge(payCtx, &pb.ChargeRequest{",
-    "			Amount: &pb.Money{CurrencyCode: req.GetCurrencyCode(), Units: total.Units},",
-    "			CreditCard: req.GetCreditCard(),",
-    "-	})",
-    "+		})",
-    "+	})",
-    "	if err != nil {",
-    "-		return nil, status.Errorf(codes.Internal, \"payment failed: %v\", err)",
-    "+		return nil, status.Errorf(codes.Unavailable, \"payment unavailable: %v\", err)",
-    "	}",
+    "@@ -269,7 +269,9 @@ func (cs *checkoutService) PlaceOrder(ctx context.Context, req *pb.PlaceOrderReq",
+    "-	if err := cs.sendOrderConfirmation(ctx, req.Email, orderResult); err != nil {",
+    "+	emailCtx, emailCancel := context.WithTimeout(ctx, 200*time.Millisecond)",
+    "+	defer emailCancel()",
+    "+	if err := cs.sendOrderConfirmation(emailCtx, req.Email, orderResult); err != nil {",
   ].join("\n"),
-  source: "template",
+  source: "bob-shell",
+  bob_task_id: "fdbad60b579de545555fd8ef043b9bf1",
+  bobcoins: 0.083248,
 };
 
 const verificationRunOne: Verification = {
   id: "verification-1",
   run_id: runOne.id,
   stable: true,
-  before: { p95_ms: 4820, p99_ms: 7310, error_rate: 38.4, time_to_collapse_s: 74.5 },
-  after: { p95_ms: 236, p99_ms: 412, error_rate: 0.4, time_to_collapse_s: null },
+  before: { p95_ms: 919.6, p99_ms: 930.4, error_rate: 0, time_to_collapse_s: 30 },
+  after: { p95_ms: 691.1, p99_ms: 833, error_rate: 0, time_to_collapse_s: null },
   improvement_pct: {
-    p95: 95.1,
-    p99: 94.4,
-    error_rate: 99.0,
+    p95: 24.8,
+    p99: 10.5,
+    error_rate: 0,
     collapse: 100,
-    diagnosis_time: 96.6,
+    diagnosis_time: 99.7,
   },
 };
 

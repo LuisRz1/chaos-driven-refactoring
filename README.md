@@ -73,8 +73,8 @@ cd runner
 python -m cdr run --scenario scenarios/checkout-latency-cascade.yaml --mode live --sink all
 ```
 
-See `infra/README.md` for fault injection commands and `docs/DEPLOYMENT.md` for the full
-environment setup.
+See `infra/README.md` for fault injection commands, `docs/DEPLOYMENT.md` for the full environment
+setup and [`docs/LIVE_EVIDENCE.md`](docs/LIVE_EVIDENCE.md) for the measured Bob repair.
 
 ## How IBM Bob 2.0 is used
 

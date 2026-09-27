@@ -10,7 +10,7 @@ load:
   injection_at_s: 30
 chaos:
   tool: toxiproxy
-  proxy: payment-service
+  proxy: email-service
   fault: latency
   attributes:
     latency_ms: 800

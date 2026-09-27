@@ -7,7 +7,7 @@ Minimal, reproducible chaos lab for the Online Boutique subset used by the CDR d
 | Path | Purpose |
 | --- | --- |
 | `target/docker-compose.yml` | Online Boutique subset (frontend, checkout, payment, catalog, cart, currency, shipping, email, redis) |
-| `chaos/toxiproxy.json` | Toxiproxy proxy that sits between `checkoutservice` and `paymentservice` |
+| `chaos/toxiproxy.json` | Toxiproxy proxy that sits between `checkoutservice` and optional `emailservice` |
 | `load/checkout-load.js` | k6 scenario: 200 virtual users driving add-to-cart and checkout |
 
 ## Start staging
@@ -21,18 +21,18 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/
 ## Inject chaos
 
 ```bash
-# 800 ms latency (+/- 100 ms) on every payment call
-curl -s -X POST http://localhost:8474/proxies/payment-service/toxics \
+# 800 ms latency (+/- 100 ms) on every confirmation email call
+curl -s -X POST http://localhost:8474/proxies/email-service/toxics \
   -H "Content-Type: application/json" \
   -d '{"name":"latency","type":"latency","attributes":{"latency":800,"jitter":100}}'
 
 # abort the dependency completely
-curl -s -X POST http://localhost:8474/proxies/payment-service/toxics \
+curl -s -X POST http://localhost:8474/proxies/email-service/toxics \
   -H "Content-Type: application/json" \
   -d '{"name":"abort","type":"abort","attributes":{"timeout":0}}'
 
 # remove the injected fault
-curl -s -X DELETE http://localhost:8474/proxies/payment-service/toxics/latency
+curl -s -X DELETE http://localhost:8474/proxies/email-service/toxics/latency
 ```
 
 ## Generate load and capture the collapse
@@ -47,6 +47,6 @@ collapse captured by phase 1 of the runner.
 ## Wire it to the runner
 
 The runner ships with `--mode mock` (deterministic, no Docker) for pipeline and dashboard
-development. Live mode uses these same endpoints; point `PAYMENT_SERVICE_ADDR` at
+development. Live mode uses these same endpoints; point `EMAIL_SERVICE_ADDR` at
 `toxiproxy:8666` (already configured in the compose file) and keep the toxiproxy admin API on
 `localhost:8474` reachable from the runner.
